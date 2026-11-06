@@ -51,6 +51,7 @@ export default function Scan() {
   const [showWalkIn, setShowWalkIn] = useState(false)
   const [newDriver, setNewDriver] = useState(null)
   const busy = useRef(false)
+  const recent = useRef({ text: '', until: 0 })   // ignore a just-processed code for a few seconds
 
   async function loadEvent() {
     // Most recent non-archived event is the one new records are filed under
@@ -78,15 +79,21 @@ export default function Scan() {
     return data
   }
 
+  // Never let a slow network freeze the screen: after 6s the scan is queued and retried in the background.
+  function withTimeout(promise, ms, fallback) {
+    return Promise.race([promise, new Promise(res => setTimeout(() => res(fallback), ms))])
+  }
   async function record(row) {
-    const e = await loadEvent().catch(() => event)
-    const ok = await submitScan({ ...row, operator_id: user.id, event_id: e?.id || null })
+    const e = await withTimeout(loadEvent().catch(() => event), 3000, event)
+    const ok = await withTimeout(submitScan({ ...row, operator_id: user.id, event_id: e?.id || null }), 6000, false)
     setPending(pendingCount())
     return ok
   }
 
+  function done(text) { recent.current = { text, until: Date.now() + 6000 } }
   async function onScan(text) {
     if (busy.current || paused) return
+    if (text === recent.current.text && Date.now() < recent.current.until) return
     busy.current = true
     try {
       const d = decode(text)
@@ -95,14 +102,14 @@ export default function Scan() {
       // Park codes work from any mode
       if (d.type === 'PA') {
         const ok = await record({ kind: 'park_all' })
-        setCar(null)
+        done(text); setCar(null)
         return show('ok', ok ? 'ALL CARS PARKED' : 'All parked (queued)', 2600)
       }
       if (d.type === 'PC') {
         const c = await lookup('cars', d.code)
         if (!c) return show('bad', 'Unknown car')
         const ok = await record({ kind: 'park_car', car_id: c.id })
-        setCar(null)
+        done(text); setCar(null)
         return show('ok', `${c.plate} PARKED${ok ? '' : ' (queued)'}`)
       }
 
@@ -111,6 +118,7 @@ export default function Scan() {
         const dr = await lookup('drivers', d.code)
         if (!dr) return show('bad', 'Unknown driver')
         const ok = await record({ kind: 'checkin', driver_id: dr.id })
+        done(text)
         return show('ok', `${dr.full_name} checked in${ok ? '' : ' (queued)'}`)
       }
 
@@ -120,7 +128,7 @@ export default function Scan() {
       if (d.type === 'C') {
         const c = await lookup('cars', d.code)
         if (!c) return show('bad', 'Unknown car')
-        setCar(c); beep(true)
+        setCar(c); beep(true); done(text)
         return
       }
       if (d.type === 'D') {
@@ -128,7 +136,7 @@ export default function Scan() {
         const dr = await lookup('drivers', d.code)
         if (!dr) return show('bad', 'Unknown driver')
         const ok = await record({ kind: 'assign', car_id: car.id, driver_id: dr.id })
-        setCar(null)
+        done(text); setCar(null)
         return show('ok', `${dr.full_name} → ${car.plate}${ok ? '' : ' (queued)'}`, 2600)
       }
     } finally { busy.current = false }

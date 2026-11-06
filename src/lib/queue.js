@@ -18,7 +18,9 @@ export async function submitScan(row) {
 
 async function tryInsert(payload) {
   try {
-    const { error } = await supabase.from('scans').insert(payload)
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 8000)
+    const { error } = await supabase.from('scans').insert(payload).abortSignal(ctrl.signal)
+    clearTimeout(t)
     if (!error) return true
     if (error.code === '23505') return true // duplicate client_id: already stored
     return false
