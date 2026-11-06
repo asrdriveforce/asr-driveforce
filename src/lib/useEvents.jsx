@@ -10,7 +10,8 @@ export function useEvents() {
   async function reload() {
     const { data } = await supabase.from('events').select('*').order('created_at', { ascending: false })
     setEvents(data || []); setLoaded(true)
-    if (data?.length && !data.find(e => e.id === eventId)) {
+    if (!data?.length) { if (eventId) setEventId('') }
+    else if (!data.find(e => e.id === eventId)) {
       const first = data.find(e => !e.archived) || data[0]
       setEventId(first.id)
     }
