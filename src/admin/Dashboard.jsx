@@ -50,7 +50,7 @@ export default function Dashboard() {
       </div>
       <div className="grid kpis" style={{ marginBottom: 14 }}>
         <div className="card kpi-card"><div className="kpi-label">Cars in use</div><div className="kpi">{Object.keys(live).length}<span className="muted" style={{ fontSize: 16, fontWeight: 600 }}> / {cars.length}</span></div></div>
-        <div className="card kpi-card"><div className="kpi-label">Assignments today</div><div className="kpi">{today.assigns}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">Drives today</div><div className="kpi">{today.assigns}</div></div>
         <div className="card kpi-card"><div className="kpi-label">Drivers today</div><div className="kpi">{today.drivers}</div></div>
         <div className="card kpi-card"><div className="kpi-label">Check-ins today</div><div className="kpi">{today.checkins}</div></div>
       </div>
