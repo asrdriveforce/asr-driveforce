@@ -4,6 +4,8 @@ import { useAuth } from '../lib/auth'
 import { fmtFull, csv, download } from '../lib/format'
 import { useEvents, EventPicker } from '../lib/useEvents'
 import { Kind } from './Dashboard'
+import { DatePicker } from '../components/DatePicker'
+import { FormModal } from '../components/Modal'
 
 // Full scan log with filters, void, and CSV export.
 export default function Records() {
@@ -14,6 +16,7 @@ export default function Records() {
   const [kind, setKind] = useState('')
   const [showVoided, setShowVoided] = useState(false)
   const [from, setFrom] = useState(''); const [to, setTo] = useState('')
+  const [voiding, setVoiding] = useState(null)
 
   async function load() {
     let query = supabase.from('scans')
@@ -35,10 +38,9 @@ export default function Records() {
     (r.driver?.full_name || '').toLowerCase().includes(needle) ||
     (r.operator?.full_name || '').toLowerCase().includes(needle)) : rows
 
-  async function voidRow(r) {
-    const reason = window.prompt(`Void this ${r.kind} scan? Enter a reason:`)
-    if (reason === null) return
+  async function voidRow(r, reason) {
     const { error } = await supabase.from('scans').update({ voided: true, voided_by: user.id, voided_at: new Date().toISOString(), void_reason: reason }).eq('id', r.id)
+    setVoiding(null)
     if (error) alert(error.message); else load()
   }
   async function unvoidRow(r) {
@@ -56,16 +58,16 @@ export default function Records() {
 
   return (
     <div>
-      <div className="row between" style={{ marginBottom: 12 }}><h1>Records</h1><EventPicker {...ev} allowAll /></div>
+      <div className="page-head"><h1>Records</h1><div className="row"><EventPicker {...ev} allowAll /><button className="btn-sm" onClick={exportCsv}>Export CSV</button></div></div>
+      {voiding && <FormModal title="Void this scan" fields={[{ name: 'reason', label: 'Reason', required: true, autoFocus: true, placeholder: 'e.g. scanned wrong driver' }]} submitLabel="Void record" danger onClose={() => setVoiding(null)} onSubmit={v => voidRow(voiding, v.reason)} />}
       <div className="card row no-print">
         <input style={{ flex: 2, minWidth: 180 }} placeholder="Search plate, driver, operator" value={q} onChange={e => setQ(e.target.value)} />
-        <select style={{ width: 'auto' }} value={kind} onChange={e => setKind(e.target.value)}>
+        <select className="select-inline" value={kind} onChange={e => setKind(e.target.value)}>
           <option value="">All types</option><option value="assign">Assign</option><option value="checkin">Check-in</option><option value="park_car">Park car</option><option value="park_all">Park all</option>
         </select>
-        <input type="date" style={{ width: 'auto' }} value={from} onChange={e => setFrom(e.target.value)} />
-        <input type="date" style={{ width: 'auto' }} value={to} onChange={e => setTo(e.target.value)} />
-        <label style={{ margin: 0 }} className="row"><input type="checkbox" style={{ width: 'auto' }} checked={showVoided} onChange={e => setShowVoided(e.target.checked)} /> show voided</label>
-        <button className="btn-sm" onClick={exportCsv}>Export CSV</button>
+        <DatePicker value={from} onChange={setFrom} placeholder="From" style={{ minWidth: 150 }} />
+        <DatePicker value={to} onChange={setTo} placeholder="To" style={{ minWidth: 150 }} />
+        <label style={{ margin: 0 }} className="row"><input type="checkbox" checked={showVoided} onChange={e => setShowVoided(e.target.checked)} /> show voided</label>
       </div>
       <div className="card">
         <p className="muted small">{shown.length} records{rows.length >= 2000 ? ' (showing most recent 2000, narrow the dates to see more)' : ''}</p>
@@ -81,7 +83,7 @@ export default function Records() {
                 <td className="muted">{r.operator?.full_name || ''}</td>
                 <td className="no-print">{r.voided
                   ? <span className="row"><span className="badge bad" title={r.void_reason}>Void: {r.void_reason}</span><button className="btn-sm btn-ghost" onClick={() => unvoidRow(r)}>Restore</button></span>
-                  : <button className="btn-sm btn-danger" onClick={() => voidRow(r)}>Void</button>}</td>
+                  : <button className="btn-sm btn-danger" onClick={() => setVoiding(r)}>Void</button>}</td>
               </tr>
             ))}
           </tbody>

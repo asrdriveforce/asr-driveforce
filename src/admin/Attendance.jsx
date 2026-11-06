@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { fmt, dayKey, csv, download } from '../lib/format'
 import { useEvents, EventPicker } from '../lib/useEvents'
+import { DatePicker } from '../components/DatePicker'
 
 // Per-day: who checked in, who drove, who was registered but never appeared.
 export default function Attendance() {
@@ -40,15 +41,15 @@ export default function Attendance() {
 
   return (
     <div>
-      <div className="row between" style={{ marginBottom: 12 }}>
+      <div className="page-head">
         <h1>Attendance</h1>
-        <div className="row"><input type="date" style={{ width: 'auto' }} value={day} onChange={e => setDay(e.target.value)} /><EventPicker {...ev} /><button className="btn-sm" onClick={exportCsv}>Export CSV</button></div>
+        <div className="row"><DatePicker value={day} onChange={d => d && setDay(d)} allowClear={false} /><EventPicker {...ev} /><button className="btn-sm" onClick={exportCsv}>Export CSV</button></div>
       </div>
-      <div className="grid two" style={{ marginBottom: 14 }}>
-        <div className="card"><div className="muted small">Registered</div><div className="kpi">{rows.length}</div></div>
-        <div className="card"><div className="muted small">Present</div><div className="kpi">{present.length}</div></div>
-        <div className="card"><div className="muted small">Drove</div><div className="kpi">{rows.filter(r => r.drives.length).length}</div></div>
-        <div className="card"><div className="muted small">No-show</div><div className="kpi">{absent.length}</div></div>
+      <div className="grid kpis" style={{ marginBottom: 14 }}>
+        <div className="card kpi-card"><div className="kpi-label">Registered</div><div className="kpi">{rows.length}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">Present</div><div className="kpi">{present.length}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">Drove</div><div className="kpi">{rows.filter(r => r.drives.length).length}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">No-show</div><div className="kpi">{absent.length}</div></div>
       </div>
       <div className="card">
         <h2>Present</h2>

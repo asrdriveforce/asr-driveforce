@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { supabase } from '../lib/supabase'
 import { encodeDriver } from '../lib/codes'
+import Logo from './Logo'
 
 // Public page: a driver's personal QR, opened from the link sent to them.
 export default function DriverPage() {
@@ -19,7 +20,7 @@ export default function DriverPage() {
   return (
     <div className="login">
       <div className="card center stack">
-        <div className="brand" style={{ justifyContent: 'center' }}><span className="dot" /> ASR DriveForce</div>
+        <div style={{ display: 'flex', justifyContent: 'center' }}><Logo /></div>
         <h1>{d.full_name}</h1>
         {d.event_name && <p className="muted">{d.event_name}</p>}
         <div className="qr-card big" style={{ display: 'inline-block' }}>

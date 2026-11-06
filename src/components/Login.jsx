@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import Logo from './Logo'
 
 export default function Login() {
   const { user, loading } = useAuth()
@@ -23,8 +24,8 @@ export default function Login() {
   return (
     <div className="login">
       <form className="card stack" onSubmit={submit}>
-        <div className="brand"><span className="dot" /> ASR DriveForce</div>
-        <h1>Sign in</h1>
+        <Logo size={34} />
+        <h1 style={{ marginTop: 18 }}>Sign in</h1>
         {err && <div className="alert bad">{err}</div>}
         <div><label>Email</label><input type="email" autoComplete="username" value={email} onChange={e => setEmail(e.target.value)} required /></div>
         <div><label>Password</label><input type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} required /></div>

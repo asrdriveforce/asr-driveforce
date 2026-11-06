@@ -44,15 +44,15 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="row between" style={{ marginBottom: 12 }}>
+      <div className="page-head">
         <h1>Dashboard</h1>
         <EventPicker {...ev} />
       </div>
-      <div className="grid two" style={{ marginBottom: 14 }}>
-        <div className="card"><div className="muted small">Cars in use now</div><div className="kpi">{Object.keys(live).length} / {cars.length}</div></div>
-        <div className="card"><div className="muted small">Assignments today</div><div className="kpi">{today.assigns}</div></div>
-        <div className="card"><div className="muted small">Distinct drivers today</div><div className="kpi">{today.drivers}</div></div>
-        <div className="card"><div className="muted small">Check-ins today</div><div className="kpi">{today.checkins}</div></div>
+      <div className="grid kpis" style={{ marginBottom: 14 }}>
+        <div className="card kpi-card"><div className="kpi-label">Cars in use</div><div className="kpi">{Object.keys(live).length}<span className="muted" style={{ fontSize: 16, fontWeight: 600 }}> / {cars.length}</span></div></div>
+        <div className="card kpi-card"><div className="kpi-label">Assignments today</div><div className="kpi">{today.assigns}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">Drivers today</div><div className="kpi">{today.drivers}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">Check-ins today</div><div className="kpi">{today.checkins}</div></div>
       </div>
 
       <div className="card">

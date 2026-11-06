@@ -117,11 +117,13 @@ export default function Scan() {
         {pending > 0 && <span className="badge warn">{pending} queued</span>}
       </div>
 
-      <div className="row" style={{ gap: 6 }}>
-        {Object.keys(MODES).map(m => (
-          <button key={m} className={'btn-sm ' + (mode === m ? 'btn-primary' : '')} onClick={() => switchMode(m)}>{MODES[m].title}</button>
-        ))}
-        <button className="btn-sm btn-ghost" onClick={() => { setShowWalkIn(v => !v); setNewDriver(null) }}>+ Walk-in</button>
+      <div className="row between">
+        <div className="seg">
+          {Object.keys(MODES).map(m => (
+            <button key={m} className={mode === m ? 'on' : ''} onClick={() => switchMode(m)}>{MODES[m].title}</button>
+          ))}
+        </div>
+        <button className="btn-sm" onClick={() => { setShowWalkIn(v => !v); setNewDriver(null) }}>+ Walk-in</button>
       </div>
 
       {showWalkIn ? (

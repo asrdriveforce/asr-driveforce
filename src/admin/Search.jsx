@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { fmtFull, localToIso, nowLocal } from '../lib/format'
+import { DateTimePicker } from '../components/DatePicker'
 
 // The core question: which driver was in car X at time T?
 export default function Search() {
@@ -24,14 +25,14 @@ export default function Search() {
 
   return (
     <div>
-      <h1>Who was driving?</h1>
+      <div className="page-head"><h1>Who was driving?</h1></div>
       <form className="card grid two" onSubmit={run}>
         <div>
           <label>Licence plate</label>
           <input list="plates" value={plate} onChange={e => setPlate(e.target.value)} placeholder="e.g. A 12345" required />
           <datalist id="plates">{plates.map(p => <option key={p} value={p} />)}</datalist>
         </div>
-        <div><label>Date and time (Dubai)</label><input type="datetime-local" value={at} onChange={e => setAt(e.target.value)} required /></div>
+        <div><label>Date and time (Dubai)</label><DateTimePicker value={at} onChange={setAt} /></div>
         <div className="row" style={{ alignSelf: 'end' }}>
           <button className="btn-primary" disabled={busy}>Search</button>
           <button type="button" className="btn-ghost" onClick={() => setAt(nowLocal())}>Now</button>

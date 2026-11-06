@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth'
 import { supabase, configured } from './lib/supabase'
+import Logo from './components/Logo'
 import Login from './components/Login'
 import DriverPage from './components/DriverPage'
 import Scan from './operator/Scan'
@@ -17,8 +18,8 @@ import PrintSheet from './admin/PrintSheet'
 function NotConfigured() {
   return (
     <div className="login"><div className="card">
-      <h1>ASR DriveForce</h1>
-      <p className="muted">Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.</p>
+      <Logo />
+      <p className="muted" style={{ marginTop: 12 }}>Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.</p>
     </div></div>
   )
 }
@@ -27,27 +28,29 @@ function Shell({ children, admin }) {
   const { profile } = useAuth()
   const nav = useNavigate()
   async function logout() { await supabase.auth.signOut(); nav('/login') }
+  const isAdmin = profile?.role === 'admin'
   return (
     <div className={'app' + (admin ? '' : ' narrow')}>
       <div className="topbar no-print">
-        <div className="brand"><span className="dot" /> DriveForce</div>
-        <div className="row">
-          {profile?.role === 'admin' && !admin && <nav className="nav"><NavLink to="/admin">Admin</NavLink></nav>}
-          {profile?.role === 'admin' && admin && (
-            <nav className="nav">
-              <NavLink to="/scan">Scan</NavLink>
-              <NavLink to="/admin" end>Dashboard</NavLink>
-              <NavLink to="/admin/search">Search</NavLink>
-              <NavLink to="/admin/records">Records</NavLink>
-              <NavLink to="/admin/attendance">Attendance</NavLink>
-              <NavLink to="/admin/events">Events</NavLink>
-              <NavLink to="/admin/cars">Cars</NavLink>
-              <NavLink to="/admin/drivers">Drivers</NavLink>
-              <NavLink to="/admin/operators">Operators</NavLink>
-            </nav>
-          )}
+        <NavLink to="/" style={{ textDecoration: 'none' }}><Logo /></NavLink>
+        <div className="topbar-right">
+          <span className="user-chip hide-mobile">{profile?.full_name}</span>
+          {isAdmin && !admin && <NavLink className="btn btn-sm" to="/admin">Admin</NavLink>}
           <button className="btn-sm btn-ghost" onClick={logout}>Log out</button>
         </div>
+        {isAdmin && admin && (
+          <nav className="nav">
+            <NavLink to="/scan">Scan</NavLink>
+            <NavLink to="/admin" end>Dashboard</NavLink>
+            <NavLink to="/admin/search">Search</NavLink>
+            <NavLink to="/admin/records">Records</NavLink>
+            <NavLink to="/admin/attendance">Attendance</NavLink>
+            <NavLink to="/admin/events">Events</NavLink>
+            <NavLink to="/admin/cars">Cars</NavLink>
+            <NavLink to="/admin/drivers">Drivers</NavLink>
+            <NavLink to="/admin/operators">Operators</NavLink>
+          </nav>
+        )}
       </div>
       {children}
     </div>
@@ -71,6 +74,7 @@ function Home() {
 
 export default function App() {
   if (!configured) return <NotConfigured />
+  const A = (el) => <RequireAuth adminOnly><Shell admin>{el}</Shell></RequireAuth>
   return (
     <AuthProvider>
       <Routes>
@@ -78,15 +82,15 @@ export default function App() {
         <Route path="/d/:code" element={<DriverPage />} />
         <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
         <Route path="/scan" element={<RequireAuth><Shell><Scan /></Shell></RequireAuth>} />
-        <Route path="/admin" element={<RequireAuth adminOnly><Shell admin><Dashboard /></Shell></RequireAuth>} />
-        <Route path="/admin/search" element={<RequireAuth adminOnly><Shell admin><Search /></Shell></RequireAuth>} />
-        <Route path="/admin/records" element={<RequireAuth adminOnly><Shell admin><Records /></Shell></RequireAuth>} />
-        <Route path="/admin/attendance" element={<RequireAuth adminOnly><Shell admin><Attendance /></Shell></RequireAuth>} />
-        <Route path="/admin/events" element={<RequireAuth adminOnly><Shell admin><Events /></Shell></RequireAuth>} />
-        <Route path="/admin/cars" element={<RequireAuth adminOnly><Shell admin><Cars /></Shell></RequireAuth>} />
-        <Route path="/admin/drivers" element={<RequireAuth adminOnly><Shell admin><Drivers /></Shell></RequireAuth>} />
-        <Route path="/admin/operators" element={<RequireAuth adminOnly><Shell admin><Operators /></Shell></RequireAuth>} />
-        <Route path="/admin/print/:kind" element={<RequireAuth adminOnly><Shell admin><PrintSheet /></Shell></RequireAuth>} />
+        <Route path="/admin" element={A(<Dashboard />)} />
+        <Route path="/admin/search" element={A(<Search />)} />
+        <Route path="/admin/records" element={A(<Records />)} />
+        <Route path="/admin/attendance" element={A(<Attendance />)} />
+        <Route path="/admin/events" element={A(<Events />)} />
+        <Route path="/admin/cars" element={A(<Cars />)} />
+        <Route path="/admin/drivers" element={A(<Drivers />)} />
+        <Route path="/admin/operators" element={A(<Operators />)} />
+        <Route path="/admin/print/:kind" element={A(<PrintSheet />)} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>
