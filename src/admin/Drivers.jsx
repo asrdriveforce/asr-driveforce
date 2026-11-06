@@ -70,11 +70,27 @@ export default function Drivers() {
       { label: 'Link', get: d => driverLink(d.code) }, { label: 'Walk-in', get: d => d.walk_in ? 'yes' : '' },
     ]))
   }
-  function mailAll() {
-    const to = drivers.filter(d => d.email && d.active).map(d => d.email)
-    if (!to.length) return alert('No driver has an email address.')
-    // mailto with BCC: works with any mail client; per-driver links go in the CSV export
-    window.location.href = `mailto:?bcc=${encodeURIComponent(to.join(','))}&subject=${encodeURIComponent(`Your DriveForce driver code – ${ev.event?.name || ''}`)}`
+  const [sel, setSel] = useState(new Set())
+  const [sending, setSending] = useState(false)
+  const [sendResult, setSendResult] = useState(null)
+  function toggleSel(id) { setSel(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n }) }
+  function selectAllWithEmail() { setSel(new Set(shown.filter(d => d.email && d.active).map(d => d.id))) }
+
+  async function sendCodes() {
+    const ids = [...sel]
+    if (!ids.length) return
+    if (!window.confirm(`Email their personal code to ${ids.length} driver${ids.length > 1 ? 's' : ''}?`)) return
+    setSending(true); setSendResult(null); setErr('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const r = await fetch('/api/send-codes', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ driver_ids: ids, event_name: ev.event?.name || '', origin: window.location.origin }),
+      })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error || r.statusText)
+      setSendResult(j); setSel(new Set())
+    } catch (e) { setErr(String(e.message || e)) } finally { setSending(false) }
   }
 
   const needle = q.trim().toLowerCase()
@@ -89,6 +105,12 @@ export default function Drivers() {
       {!ev.eventId && <div className="alert warn">Create an event first.</div>}
       {msg && <div className="alert ok">{msg}</div>}
       {err && <div className="alert bad">{err}</div>}
+      {sendResult && (
+        <div className={'alert ' + (sendResult.failed.length ? 'warn' : 'ok')}>
+          Sent {sendResult.sent} of {sendResult.total}.
+          {sendResult.failed.length > 0 && <div className="small" style={{ marginTop: 6 }}>Not sent: {sendResult.failed.map(f => `${f.name} (${f.error})`).join('; ')}</div>}
+        </div>
+      )}
       <div className="grid two">
         <form className="card stack" onSubmit={add}>
           <h2>Add one</h2>
@@ -117,12 +139,17 @@ export default function Drivers() {
       <div className="card">
         <div className="row between" style={{ marginBottom: 8 }}>
           <input style={{ maxWidth: 320 }} placeholder="Search drivers" value={q} onChange={e => setQ(e.target.value)} />
-          <div className="row"><span className="muted small">{drivers.length} drivers · {drivers.filter(d => d.walk_in).length} walk-ins</span><button className="btn-sm" onClick={mailAll}>Email all (BCC)</button></div>
+          <div className="row">
+            <span className="muted small">{drivers.length} drivers · {drivers.filter(d => d.walk_in).length} walk-ins</span>
+            <button className="btn-sm btn-ghost" onClick={selectAllWithEmail}>Select all with email</button>
+            <button className="btn-sm btn-primary" onClick={sendCodes} disabled={sending || !sel.size}>{sending ? 'Sending…' : `Send codes by email (${sel.size})`}</button>
+          </div>
         </div>
         <div className="table-wrap"><table>
-          <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Link</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th></th><th>Name</th><th>Phone</th><th>Email</th><th>Link</th><th>Status</th><th></th></tr></thead>
           <tbody>{shown.map(d => (
             <tr key={d.id} style={{ opacity: d.active ? 1 : .5 }}>
+              <td><input type="checkbox" style={{ width: 'auto' }} checked={sel.has(d.id)} disabled={!d.email} onChange={() => toggleSel(d.id)} /></td>
               <td><strong>{d.full_name}</strong> {d.walk_in && <span className="badge">walk-in</span>}</td>
               <td className="muted">{d.phone}</td><td className="muted">{d.email}</td>
               <td><button className="btn-sm btn-ghost" onClick={() => navigator.clipboard?.writeText(driverLink(d.code))}>Copy link</button></td>
