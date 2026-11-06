@@ -198,3 +198,15 @@ select p.id, p.full_name, p.role, p.active, u.email, p.created_at
 from profiles p join auth.users u on u.id = p.id
 where is_admin() or p.id = auth.uid();
 grant select on operators to authenticated;
+
+-- ---------- Grants (required when "Automatically expose new tables" is off) ----------
+grant usage on schema public to anon, authenticated;
+grant select, insert, update on all tables in schema public to authenticated;
+grant usage, select on all sequences in schema public to authenticated;
+grant execute on all functions in schema public to authenticated;
+alter default privileges in schema public grant select, insert, update on tables to authenticated;
+
+-- Safety net: create a profile for any auth user that lacks one
+insert into profiles (id, full_name, role)
+select u.id, coalesce(u.raw_user_meta_data->>'full_name',''), 'operator'
+from auth.users u left join profiles p on p.id = u.id where p.id is null;
