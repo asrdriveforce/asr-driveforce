@@ -165,7 +165,8 @@ export default function Drivers() {
               <td className="muted hide-mobile">{d.phone}</td><td className="muted hide-mobile">{d.email}</td>
               <td>{d.active ? <span className="badge ok">Active</span> : <span className="badge">Inactive</span>}</td>
               <td className="actions">
-                <button className="btn-sm btn-ghost" title="Copy personal link" onClick={() => navigator.clipboard?.writeText(driverLink(d.code))}>Link</button>
+                <a className="btn btn-sm btn-ghost" href={driverLink(d.code)} target="_blank" rel="noopener" title="Open the driver's personal code page">Open</a>
+                <button className="btn-sm btn-ghost" title="Copy personal link" onClick={(e) => { navigator.clipboard?.writeText(driverLink(d.code)); const b = e.currentTarget; b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy link' }, 1500) }}>Copy link</button>
                 <button className="btn-sm btn-ghost" onClick={() => setEditing(d)}>Edit</button>
                 <button className="btn-sm btn-ghost" onClick={() => toggle(d)}>{d.active ? 'Deactivate' : 'Activate'}</button>
                 <button className="btn-sm btn-danger" onClick={() => setDeleting(d)}>Delete</button>
