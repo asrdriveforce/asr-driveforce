@@ -35,11 +35,19 @@ export default function Scan() {
   const [newDriver, setNewDriver] = useState(null)
   const busy = useRef(false)
 
+  async function loadEvent() {
+    // Most recent non-archived event is the one new records are filed under
+    const { data } = await supabase.from('events').select('id,name').eq('archived', false).order('created_at', { ascending: false }).limit(1)
+    const e = data?.[0] || null
+    setEvent(e)
+    return e
+  }
   useEffect(() => {
     startQueueWorker(() => setPending(pendingCount()))
-    // Most recent non-archived event is the default for new records
-    supabase.from('events').select('id,name').eq('archived', false).order('created_at', { ascending: false }).limit(1)
-      .then(({ data }) => setEvent(data?.[0] || null))
+    loadEvent()
+    const onVis = () => { if (document.visibilityState === 'visible') loadEvent() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
   }, [])
 
   function show(kind, text, ms = 2200) {
@@ -54,7 +62,8 @@ export default function Scan() {
   }
 
   async function record(row) {
-    const ok = await submitScan({ ...row, operator_id: user.id, event_id: event?.id || null })
+    const e = await loadEvent().catch(() => event)
+    const ok = await submitScan({ ...row, operator_id: user.id, event_id: e?.id || null })
     setPending(pendingCount())
     return ok
   }
