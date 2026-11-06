@@ -13,7 +13,7 @@ export default function Scanner({ onScan, hint, paused, cooldownMs = 2500 }) {
   useEffect(() => {
     const qr = new Html5Qrcode('df-reader', { verbose: false })
     ref.current = qr
-    let started = false
+    let started = false, cancelled = false
     qr.start(
       { facingMode: 'environment' },
       { fps: 10, qrbox: (w, h) => { const s = Math.floor(Math.min(w, h) * 0.75); return { width: s, height: s } }, aspectRatio: 1 },
@@ -24,8 +24,12 @@ export default function Scanner({ onScan, hint, paused, cooldownMs = 2500 }) {
         cb.current(text)
       },
       () => {}
-    ).then(() => { started = true }).catch((e) => { setErr(String(e?.message || e)) })
+    ).then(() => {
+      started = true
+      if (cancelled) qr.stop().then(() => qr.clear()).catch(() => {})
+    }).catch((e) => { if (!cancelled) setErr(String(e?.message || e)) })
     return () => {
+      cancelled = true
       if (!started) return
       try { qr.stop().then(() => qr.clear()).catch(() => {}) } catch { /* not running */ }
     }
