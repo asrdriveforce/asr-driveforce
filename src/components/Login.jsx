@@ -24,7 +24,7 @@ export default function Login() {
   return (
     <div className="login">
       <form className="card stack" onSubmit={submit}>
-        <Logo size={34} />
+        <Logo size={40} />
         <h1 style={{ marginTop: 18 }}>Sign in</h1>
         {err && <div className="alert bad">{err}</div>}
         <div><label>Email</label><input type="email" autoComplete="username" value={email} onChange={e => setEmail(e.target.value)} required /></div>
