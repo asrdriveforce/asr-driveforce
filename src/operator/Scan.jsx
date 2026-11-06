@@ -178,7 +178,7 @@ export default function Scan() {
             </div>
           )}
           {flash && <div className={'alert ' + flash.kind}><div className="big-result">{flash.text}</div></div>}
-          <Scanner onScan={onScan} paused={paused} hint={mode === 'assign' && car ? MODES.assign.hint2 : MODES[mode].hint1} />
+          <Scanner onScan={onScan} paused={paused} hint={flash ? flash.text : (mode === 'assign' && car ? MODES.assign.hint2 : MODES[mode].hint1)} />
           {car && <button className="btn-block btn-ghost" onClick={() => setCar(null)}>Cancel car</button>}
         </>
       )}
