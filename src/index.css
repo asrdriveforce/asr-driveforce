@@ -172,15 +172,15 @@ tbody tr:hover td { background: #faf9f6; }
 
 .login { min-height: 100vh; display: grid; place-items: center; padding: 20px; }
 .login .card { width: 100%; max-width: 380px; padding: 24px; }
+.login .logo { justify-content: center; width: 100%; }
 .center { text-align: center; }
 
 /* Mobile */
 @media (max-width: 640px) {
   .app { padding: 8px 12px 28px; }
   h1 { font-size: 21px; }
-  .topbar { flex-wrap: wrap; padding-bottom: 8px; justify-content: center; row-gap: 6px; }
-  .topbar > a:first-child { width: 100%; display: flex; justify-content: center; padding: 8px 0 4px; }
-  .topbar-right { width: 100%; justify-content: flex-end; }
+  .topbar { flex-wrap: wrap; padding-bottom: 10px; }
+  .topbar-right { margin-left: auto; }
   .nav { width: 100%; order: 3; margin: 2px -12px 0; padding: 0 12px 6px; }
   .card { padding: 14px; border-radius: 12px; }
   .table-wrap { margin: 0 -14px; padding: 0 14px; }
