@@ -33,7 +33,7 @@ export default function Search() {
           <datalist id="plates">{plates.map(p => <option key={p} value={p} />)}</datalist>
         </div>
         <div><label>Date and time (Dubai)</label><DateTimePicker value={at} onChange={setAt} /></div>
-        <div className="row" style={{ alignSelf: 'end' }}>
+        <div className="row" style={{ alignSelf: 'end', paddingBottom: 1 }}>
           <button className="btn-primary" disabled={busy}>Search</button>
           <button type="button" className="btn-ghost" onClick={() => setAt(nowLocal())}>Now</button>
         </div>

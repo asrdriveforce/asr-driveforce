@@ -4,6 +4,8 @@ import { useEvents } from '../lib/useEvents'
 import { DatePicker } from '../components/DatePicker'
 import { FormModal, ConfirmModal } from '../components/Modal'
 
+const fmtDay = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
+
 export default function Events() {
   const ev = useEvents()
   const [name, setName] = useState(''); const [starts, setStarts] = useState(''); const [ends, setEnds] = useState('')
@@ -39,7 +41,7 @@ export default function Events() {
         <div style={{ gridColumn: '1/-1' }}><label>Event name</label><input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Yas Marina November 2026" required /></div>
         <div><label>Starts (optional)</label><DatePicker value={starts} onChange={setStarts} /></div>
         <div><label>Ends (optional)</label><DatePicker value={ends} onChange={setEnds} /></div>
-        <div><button className="btn-primary">Create event</button></div>
+        <div style={{ alignSelf: 'end' }}><button className="btn-primary">Create event</button></div>
       </form>
       <div className="card">
         <p className="muted small">Operators' scans are recorded against the newest non-archived event. Archive an event when it's over.</p>
@@ -48,7 +50,7 @@ export default function Events() {
           <tbody>{ev.events.map(e => (
             <tr key={e.id} style={{ opacity: e.archived ? .55 : 1 }}>
               <td><strong>{e.name}</strong></td>
-              <td className="muted">{e.starts_on || ''}{e.ends_on ? ` → ${e.ends_on}` : ''}</td>
+              <td className="muted">{fmtDay(e.starts_on)}{e.ends_on ? ` → ${fmtDay(e.ends_on)}` : ''}</td>
               <td>{e.archived ? <span className="badge">Archived</span> : <span className="badge ok">Active</span>}</td>
               <td className="actions">
                 <button className="btn-sm btn-ghost" onClick={() => setEditing(e)}>Edit</button>
