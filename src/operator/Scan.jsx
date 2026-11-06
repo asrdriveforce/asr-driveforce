@@ -74,6 +74,18 @@ export default function Scan() {
     setTimeout(() => { setFlash(null); setPaused(false) }, ms)
   }
 
+  // Start of today in Dubai time, as ISO
+  function dubaiDayStart() {
+    const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dubai', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date())
+    const g = (t) => p.find(x => x.type === t).value
+    return new Date(`${g('year')}-${g('month')}-${g('day')}T00:00:00+04:00`).toISOString()
+  }
+  async function alreadyCheckedInToday(driverId) {
+    const { data } = await supabase.from('scans').select('scanned_at').eq('kind', 'checkin').eq('driver_id', driverId).eq('voided', false)
+      .gte('scanned_at', dubaiDayStart()).order('scanned_at').limit(1)
+    if (!data?.length) return null
+    return new Date(data[0].scanned_at).toLocaleTimeString('en-GB', { timeZone: 'Asia/Dubai', hour: '2-digit', minute: '2-digit' })
+  }
   async function lookup(table, code) {
     const { data } = await supabase.from(table).select('*').eq('code', code).eq('active', true).maybeSingle()
     return data
@@ -117,6 +129,8 @@ export default function Scan() {
         if (d.type !== 'D') return show('warn', 'Scan a driver code')
         const dr = await lookup('drivers', d.code)
         if (!dr) return show('bad', 'Unknown driver')
+        const prior = await alreadyCheckedInToday(dr.id)
+        if (prior) { done(text); return show('warn', `${dr.full_name} already checked in at ${prior}`) }
         const ok = await record({ kind: 'checkin', driver_id: dr.id })
         done(text)
         return show('ok', `${dr.full_name} checked in${ok ? '' : ' (queued)'}`)
