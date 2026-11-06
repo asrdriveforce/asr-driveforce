@@ -5,7 +5,7 @@ import { fmtFull, csv, download } from '../lib/format'
 import { useEvents, EventPicker } from '../lib/useEvents'
 import { Kind } from './Dashboard'
 import { DateTimePicker } from '../components/DatePicker'
-import { FormModal } from '../components/Modal'
+import { FormModal, ConfirmModal } from '../components/Modal'
 
 // Full scan log with filters, void, and CSV export.
 export default function Records() {
@@ -17,6 +17,12 @@ export default function Records() {
   const [showVoided, setShowVoided] = useState(false)
   const [from, setFrom] = useState(''); const [to, setTo] = useState('')
   const [voiding, setVoiding] = useState(null)
+  const [deleting, setDeleting] = useState(null)
+  async function deleteRow() {
+    const r = deleting; setDeleting(null)
+    const { error } = await supabase.from('scans').delete().eq('id', r.id)
+    if (error) alert(error.message); else load()
+  }
 
   async function load() {
     let query = supabase.from('scans')
@@ -59,6 +65,7 @@ export default function Records() {
   return (
     <div>
       <div className="page-head"><h1>Records</h1><div className="row"><EventPicker {...ev} allowAll /><button className="btn-sm" onClick={exportCsv}>Export CSV</button></div></div>
+      {deleting && <ConfirmModal title="Delete record" message={`Permanently delete this ${deleting.kind} scan from ${fmtFull(deleting.scanned_at)}? Void keeps it in the log; delete removes it entirely.`} onClose={() => setDeleting(null)} onConfirm={deleteRow} />}
       {voiding && <FormModal title="Void this scan" fields={[{ name: 'reason', label: 'Reason', required: true, autoFocus: true, placeholder: 'e.g. scanned wrong driver' }]} submitLabel="Void record" danger onClose={() => setVoiding(null)} onSubmit={v => voidRow(voiding, v.reason)} />}
       <div className="card row no-print">
         <input style={{ flex: 2, minWidth: 180 }} placeholder="Search plate, driver, operator" value={q} onChange={e => setQ(e.target.value)} />
@@ -83,8 +90,8 @@ export default function Records() {
                 <td>{r.driver?.full_name || ''}</td>
                 <td className="muted">{r.operator?.full_name || ''}</td>
                 <td className="no-print">{r.voided
-                  ? <span className="row"><span className="badge bad" title={r.void_reason}>Void: {r.void_reason}</span><button className="btn-sm btn-ghost" onClick={() => unvoidRow(r)}>Restore</button></span>
-                  : <button className="btn-sm btn-danger" onClick={() => setVoiding(r)}>Void</button>}</td>
+                  ? <span className="actions"><span className="badge bad" title={r.void_reason}>Void: {r.void_reason}</span><button className="btn-sm btn-ghost" onClick={() => unvoidRow(r)}>Restore</button><button className="btn-sm btn-danger" onClick={() => setDeleting(r)}>Delete</button></span>
+                  : <span className="actions"><button className="btn-sm btn-ghost" onClick={() => setVoiding(r)}>Void</button><button className="btn-sm btn-danger" onClick={() => setDeleting(r)}>Delete</button></span>}</td>
               </tr>
             ))}
           </tbody>

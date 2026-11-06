@@ -28,6 +28,7 @@ export default function DriverPage() {
           <div className="sub mono">{d.code}</div>
         </div>
         <p className="muted small">Show this screen to the operator. Turn your brightness up.</p>
+        <p className="muted" style={{ fontSize: 11, lineHeight: 1.4, marginTop: 14 }}>Your name and contact details are held by ASR Strategies LLC to record which vehicle you drove and when, to attribute traffic fines and incidents to the responsible driver, and to share that with the event organiser or authorities where required. Data is processed on servers outside the UAE. Contact events@asr.ae to access or correct your details.</p>
       </div>
     </div>
   )

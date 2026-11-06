@@ -40,10 +40,14 @@ export default function Cars() {
     const { error } = await supabase.from('cars').update({ plate: v.plate.trim().toUpperCase(), label: v.label.trim() }).eq('id', editing.id)
     setEditing(null); if (error) setErr(error.message); else load()
   }
+  async function askDelete(c) {
+    const { count } = await supabase.from('scans').select('id', { count: 'exact', head: true }).eq('car_id', c.id)
+    setDeleting({ ...c, scanCount: count || 0 })
+  }
   async function remove() {
     const c = deleting; setDeleting(null)
     const { error } = await supabase.from('cars').delete().eq('id', c.id)
-    if (error) setErr(error.code === '23503' ? `${c.plate} has scan records, so it can't be deleted. Deactivate it instead.` : error.message); else { setErr(''); load() }
+    if (error) setErr(error.message); else { setErr(''); load() }
   }
 
   return (
@@ -56,7 +60,7 @@ export default function Cars() {
       {err && <div className="alert bad">{err}</div>}
       {editing && <FormModal title="Edit car" initial={editing} onClose={() => setEditing(null)} onSubmit={save}
         fields={[{ name: 'plate', label: 'Licence plate', required: true, autoFocus: true }, { name: 'label', label: 'Label', placeholder: 'model, colour, number…' }]} />}
-      {deleting && <ConfirmModal title="Delete car" message={`Delete ${deleting.plate}? This cannot be undone.`} onClose={() => setDeleting(null)} onConfirm={remove} />}
+      {deleting && <ConfirmModal title="Delete car" message={`Delete ${deleting.plate}?${deleting.scanCount ? ` This also deletes its ${deleting.scanCount} scan record${deleting.scanCount === 1 ? '' : 's'}.` : ''} This cannot be undone.`} onClose={() => setDeleting(null)} onConfirm={remove} />}
       <div className="grid two">
         <form className="card stack" onSubmit={add}>
           <h2>Add one</h2>
@@ -81,7 +85,7 @@ export default function Cars() {
               <td className="actions">
                 <button className="btn-sm btn-ghost" onClick={() => setEditing(c)}>Edit</button>
                 <button className="btn-sm btn-ghost" onClick={() => toggle(c)}>{c.active ? 'Deactivate' : 'Activate'}</button>
-                <button className="btn-sm btn-danger" onClick={() => setDeleting(c)}>Delete</button>
+                <button className="btn-sm btn-danger" onClick={() => askDelete(c)}>Delete</button>
               </td>
             </tr>
           ))}</tbody>

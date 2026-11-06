@@ -48,6 +48,7 @@ export default async function handler(req, res) {
           <p style="text-align:center;margin:24px 0"><img src="cid:qr" alt="QR code" width="260" height="260" style="border:1px solid #ddd;border-radius:8px"></p>
           <p style="text-align:center"><a href="${link}" style="display:inline-block;background:#1a56db;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700">Open my code</a></p>
           <p style="color:#666;font-size:13px">Link: <a href="${link}">${link}</a><br>Code: ${d.code}</p>
+          <p style="color:#888;font-size:11px;line-height:1.4;margin-top:24px;border-top:1px solid #eee;padding-top:12px">Your name and contact details are held by ASR Strategies LLC to record which vehicle you drove and when, to attribute traffic fines and incidents to the responsible driver, and to share that with the event organiser or authorities where required. Data is processed on servers outside the UAE. Reply to this email to access or correct your details.</p>
         </div>`
       try {
         const { error } = await resend.emails.send({

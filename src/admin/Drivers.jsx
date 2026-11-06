@@ -62,10 +62,14 @@ export default function Drivers() {
   const [editing, setEditing] = useState(null)
   const [deleting, setDeleting] = useState(null)
   const [confirmSend, setConfirmSend] = useState(false)
+  async function askDelete(d) {
+    const { count } = await supabase.from('scans').select('id', { count: 'exact', head: true }).eq('driver_id', d.id)
+    setDeleting({ ...d, scanCount: count || 0 })
+  }
   async function remove() {
     const d = deleting; setDeleting(null)
     const { error } = await supabase.from('drivers').delete().eq('id', d.id)
-    if (error) setErr(error.code === '23503' ? `${d.full_name} has scan records, so they can't be deleted. Deactivate instead.` : error.message); else { setErr(''); load() }
+    if (error) setErr(error.message); else { setErr(''); load() }
   }
   async function save(v) {
     const { error } = await supabase.from('drivers').update({ full_name: v.full_name.trim(), phone: v.phone.trim(), email: v.email.trim() }).eq('id', editing.id)
@@ -112,7 +116,7 @@ export default function Drivers() {
       {!ev.eventId && <div className="alert warn">Create an event first.</div>}
       {editing && <FormModal title="Edit driver" initial={editing} onClose={() => setEditing(null)} onSubmit={save}
         fields={[{ name: 'full_name', label: 'Full name', required: true, autoFocus: true }, { name: 'phone', label: 'Phone' }, { name: 'email', label: 'Email', type: 'email' }]} />}
-      {deleting && <ConfirmModal title="Delete driver" message={`Delete ${deleting.full_name}? This cannot be undone.`} onClose={() => setDeleting(null)} onConfirm={remove} />}
+      {deleting && <ConfirmModal title="Delete driver" message={`Delete ${deleting.full_name}?${deleting.scanCount ? ` This also deletes their ${deleting.scanCount} scan record${deleting.scanCount === 1 ? '' : 's'}.` : ''} This cannot be undone.`} onClose={() => setDeleting(null)} onConfirm={remove} />}
       {confirmSend && <ConfirmModal title="Send codes by email" confirmLabel={`Send to ${sel.size}`} message={`Email their personal QR code and link to ${sel.size} driver${sel.size > 1 ? 's' : ''}?`} onClose={() => setConfirmSend(false)} onConfirm={sendCodes} />}
       {msg && <div className="alert ok">{msg}</div>}
       {err && <div className="alert bad">{err}</div>}
@@ -169,7 +173,7 @@ export default function Drivers() {
                 <button className="btn-sm btn-ghost" title="Copy personal link" onClick={(e) => { navigator.clipboard?.writeText(driverLink(d.code)); const b = e.currentTarget; b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy link' }, 1500) }}>Copy link</button>
                 <button className="btn-sm btn-ghost" onClick={() => setEditing(d)}>Edit</button>
                 <button className="btn-sm btn-ghost" onClick={() => toggle(d)}>{d.active ? 'Deactivate' : 'Activate'}</button>
-                <button className="btn-sm btn-danger" onClick={() => setDeleting(d)}>Delete</button>
+                <button className="btn-sm btn-danger" onClick={() => askDelete(d)}>Delete</button>
               </td>
             </tr>
           ))}</tbody>

@@ -74,19 +74,17 @@ export default function Scan() {
     setTimeout(() => { setFlash(null); setPaused(false) }, ms)
   }
 
-  // Start of today in Dubai time, as ISO
-  function dubaiDayStart() {
-    const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dubai', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date())
-    const g = (t) => p.find(x => x.type === t).value
-    return new Date(`${g('year')}-${g('month')}-${g('day')}T00:00:00+04:00`).toISOString()
-  }
   async function alreadyCheckedInToday(driverId) {
-    const { data } = await supabase.from('scans').select('scanned_at').eq('kind', 'checkin').eq('driver_id', driverId).eq('voided', false)
-      .gte('scanned_at', dubaiDayStart()).order('scanned_at').limit(1)
-    if (!data?.length) return null
-    return new Date(data[0].scanned_at).toLocaleTimeString('en-GB', { timeZone: 'Asia/Dubai', hour: '2-digit', minute: '2-digit' })
+    const { data } = await supabase.rpc('checkin_time_today', { p_driver: driverId })
+    if (!data) return null
+    return new Date(data).toLocaleTimeString('en-GB', { timeZone: 'Asia/Dubai', hour: '2-digit', minute: '2-digit' })
   }
   async function lookup(table, code) {
+    if (table === 'drivers') {
+      // operators can't read the drivers table; this returns id, name and code only
+      const { data } = await supabase.rpc('driver_by_code', { p_code: code })
+      return data?.[0] || null
+    }
     const { data } = await supabase.from(table).select('*').eq('code', code).eq('active', true).maybeSingle()
     return data
   }
@@ -220,12 +218,13 @@ function WalkIn({ event, onCreated, onCancel }) {
   const [err, setErr] = useState(''); const [busy, setBusy] = useState(false)
   async function submit(e) {
     e.preventDefault(); setBusy(true); setErr('')
-    const { data, error } = await supabase.from('drivers')
-      .insert({ full_name: name.trim(), phone: phone.trim(), email: email.trim(), walk_in: true, event_id: event?.id || null })
-      .select().single()
+    // Operators can insert but not read the drivers table, so the code is generated here and returned as-is.
+    const code = Array.from(crypto.getRandomValues(new Uint8Array(6)), b => b.toString(16).padStart(2, '0')).join('')
+    const row = { full_name: name.trim(), phone: phone.trim(), email: email.trim(), walk_in: true, event_id: event?.id || null, code }
+    const { error } = await supabase.from('drivers').insert(row)
     setBusy(false)
     if (error) return setErr(error.message)
-    onCreated(data)
+    onCreated(row)
   }
   return (
     <form className="card stack" onSubmit={submit}>

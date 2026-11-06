@@ -24,10 +24,14 @@ export default function Events() {
     const { error } = await supabase.from('events').update({ name: v.name.trim(), starts_on: v.starts_on || null, ends_on: v.ends_on || null }).eq('id', editing.id)
     setEditing(null); if (error) setErr(error.message); else ev.reload()
   }
+  async function askDelete(e) {
+    const { count } = await supabase.from('scans').select('id', { count: 'exact', head: true }).eq('event_id', e.id)
+    setDeleting({ ...e, scanCount: count || 0 })
+  }
   async function remove() {
     const e = deleting; setDeleting(null)
     const { error } = await supabase.from('events').delete().eq('id', e.id)
-    if (error) setErr(error.code === '23503' ? `"${e.name}" has scan records, so it can't be deleted. Archive it instead.` : error.message); else { setErr(''); ev.reload() }
+    if (error) setErr(error.message); else { setErr(''); ev.reload() }
   }
 
   return (
@@ -36,7 +40,7 @@ export default function Events() {
       {err && <div className="alert bad">{err}</div>}
       {editing && <FormModal title="Edit event" initial={editing} onClose={() => setEditing(null)} onSubmit={save}
         fields={[{ name: 'name', label: 'Event name', required: true, autoFocus: true }, { name: 'starts_on', label: 'Starts', type: 'date' }, { name: 'ends_on', label: 'Ends', type: 'date' }]} />}
-      {deleting && <ConfirmModal title="Delete event" message={`Delete "${deleting.name}"? Cars and drivers in it are kept but lose their event. This cannot be undone.`} onClose={() => setDeleting(null)} onConfirm={remove} />}
+      {deleting && <ConfirmModal title="Delete event" message={`Delete "${deleting.name}"?${deleting.scanCount ? ` This also deletes its ${deleting.scanCount} scan record${deleting.scanCount === 1 ? '' : 's'}.` : ''} Cars and drivers in it are kept. This cannot be undone.`} onClose={() => setDeleting(null)} onConfirm={remove} />}
       <form className="card grid two" onSubmit={add}>
         <div style={{ gridColumn: '1/-1' }}><label>Event name</label><input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Yas Marina November 2026" required /></div>
         <div><label>Starts (optional)</label><DatePicker value={starts} onChange={setStarts} /></div>
@@ -55,7 +59,7 @@ export default function Events() {
               <td className="actions">
                 <button className="btn-sm btn-ghost" onClick={() => setEditing(e)}>Edit</button>
                 <button className="btn-sm btn-ghost" onClick={() => toggleArchive(e)}>{e.archived ? 'Unarchive' : 'Archive'}</button>
-                <button className="btn-sm btn-danger" onClick={() => setDeleting(e)}>Delete</button>
+                <button className="btn-sm btn-danger" onClick={() => askDelete(e)}>Delete</button>
               </td>
             </tr>
           ))}</tbody>
