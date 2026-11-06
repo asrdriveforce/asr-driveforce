@@ -14,9 +14,9 @@ export async function qrPng({ value, title, subtitle = '', footer = '' }) {
   ctx.drawImage(q, pad, pad)
   ctx.fillStyle = '#000'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'
   let y = pad + qrSize + 40
-  ctx.font = 'bold 110px -apple-system, Helvetica, Arial, sans-serif'
+  ctx.font = 'bold 110px Avenir Next, Helvetica, Arial, sans-serif'
   fitText(ctx, title, W - pad * 2, 110); ctx.fillText(title, W / 2, y); y += titleH
-  if (subtitle) { ctx.font = '52px -apple-system, Helvetica, Arial, sans-serif'; ctx.fillStyle = '#333'; fitText(ctx, subtitle, W - pad * 2, 52); ctx.fillText(subtitle, W / 2, y); y += subH }
+  if (subtitle) { ctx.font = '52px Avenir Next, Helvetica, Arial, sans-serif'; ctx.fillStyle = '#333'; fitText(ctx, subtitle, W - pad * 2, 52); ctx.fillText(subtitle, W / 2, y); y += subH }
   if (footer) { ctx.font = '36px ui-monospace, Menlo, monospace'; ctx.fillStyle = '#666'; ctx.fillText(footer, W / 2, y) }
   return new Promise(res => c.toBlob(res, 'image/png'))
 }
