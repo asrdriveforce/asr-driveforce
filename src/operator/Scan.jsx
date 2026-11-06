@@ -12,13 +12,30 @@ const MODES = {
   park: { title: 'Park', hint1: 'Scan a PARK code (car or all)' },
 }
 
+// One shared AudioContext, unlocked by the first tap (iOS requires a user gesture before any sound).
+let audioCtx = null
+function primeAudio() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+    if (audioCtx.state === 'suspended') audioCtx.resume()
+  } catch { /* ignore */ }
+}
 function beep(ok = true) {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    primeAudio()
+    const ctx = audioCtx
+    const t = ctx.currentTime
     const o = ctx.createOscillator(); const g = ctx.createGain()
-    o.connect(g); g.connect(ctx.destination)
-    o.frequency.value = ok ? 880 : 220; g.gain.value = 0.15
-    o.start(); o.stop(ctx.currentTime + (ok ? 0.12 : 0.3))
+    o.type = 'sine'; o.connect(g); g.connect(ctx.destination)
+    if (ok) {
+      o.frequency.setValueAtTime(1046, t); o.frequency.setValueAtTime(1318, t + 0.08)
+      g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18)
+      o.start(t); o.stop(t + 0.18)
+    } else {
+      o.frequency.setValueAtTime(220, t)
+      g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.35)
+      o.start(t); o.stop(t + 0.35)
+    }
     if (navigator.vibrate) navigator.vibrate(ok ? 60 : [80, 60, 80])
   } catch { /* ignore */ }
 }
@@ -117,10 +134,10 @@ export default function Scan() {
     } finally { busy.current = false }
   }
 
-  function switchMode(m) { setMode(m); setCar(null); setFlash(null); setShowWalkIn(false); setNewDriver(null) }
+  function switchMode(m) { primeAudio(); setMode(m); setCar(null); setFlash(null); setShowWalkIn(false); setNewDriver(null) }
 
   return (
-    <div className="stack">
+    <div className="stack" onPointerDown={primeAudio}>
       <div className="row between">
         <div><h1>{MODES[mode].title}</h1><div className="muted small">{profile?.full_name} · {event ? event.name : 'No active event'}</div></div>
         {pending > 0 && <span className="badge warn">{pending} queued</span>}
