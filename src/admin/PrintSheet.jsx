@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { supabase } from '../lib/supabase'
 import { encodeCar, encodeDriver, encodeParkCar, PARK_ALL } from '../lib/codes'
 import { useEvents, EventPicker } from '../lib/useEvents'
+import { qrPng, saveBlob, safeName, zipPngs } from '../lib/qrpng'
 
 // Printable QR sheets: /admin/print/cars | drivers | park
 export default function PrintSheet() {
@@ -12,6 +13,7 @@ export default function PrintSheet() {
   const [items, setItems] = useState([])
   const [onlyNew, setOnlyNew] = useState(false)
   const [sinceDays, setSinceDays] = useState(1)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     if (!ev.eventId) return
@@ -23,6 +25,24 @@ export default function PrintSheet() {
   const cutoff = Date.now() - sinceDays * 86400000
   const shown = kind === 'drivers' && onlyNew ? items.filter(d => new Date(d.created_at).getTime() > cutoff) : items
   const title = { cars: 'Car codes', drivers: 'Driver badges', park: 'Park codes' }[kind] || 'Codes'
+  const evName = ev.event?.name || ''
+
+  // One descriptor per code, used for both single PNG and zip
+  function spec(it) {
+    if (kind === 'drivers') return { value: encodeDriver(it.code), title: it.full_name, subtitle: evName, footer: it.code, name: `driver_${safeName(it.full_name)}_${it.code}.png` }
+    if (kind === 'cars') return { value: encodeCar(it.code), title: it.plate, subtitle: it.label, footer: it.code, name: `car_${safeName(it.plate)}.png` }
+    return { value: encodeParkCar(it.code), title: `PARK ${it.plate}`, subtitle: it.label, name: `park_${safeName(it.plate)}.png` }
+  }
+  const parkAll = { value: PARK_ALL, title: 'PARK ALL CARS', subtitle: 'Ends every current assignment', name: 'park_ALL.png' }
+
+  async function one(s) { saveBlob(await qrPng(s), s.name) }
+  async function all() {
+    setBusy(true)
+    try {
+      const list = kind === 'park' ? [parkAll, ...shown.map(spec)] : shown.map(spec)
+      await zipPngs(list, `driveforce_${kind}_${safeName(evName)}.zip`)
+    } finally { setBusy(false) }
+  }
 
   return (
     <div>
@@ -36,38 +56,34 @@ export default function PrintSheet() {
               <input type="number" min={1} style={{ width: 70 }} value={sinceDays} onChange={e => setSinceDays(Number(e.target.value) || 1)} /> day(s)
             </label>
           )}
-          <button className="btn-primary btn-sm" onClick={() => window.print()}>Print</button>
+          <button className="btn-sm" onClick={all} disabled={busy || !shown.length}>{busy ? 'Preparing…' : 'Download all PNG (zip)'}</button>
+          <button className="btn-primary btn-sm" onClick={() => window.print()}>Print sheet</button>
         </div>
       </div>
-      <p className="muted small no-print">{shown.length} codes. Use the browser print dialog; A4, portrait, default margins.</p>
+      <p className="muted small no-print">{shown.length} codes. PNGs are 1200px wide (about 10cm at 300dpi) with the name printed under the code.</p>
 
-      {kind === 'park' ? (
-        <div className="qr-sheet">
+      <div className="qr-sheet">
+        {kind === 'park' && (
           <div className="qr-card big" style={{ gridColumn: '1 / -1' }}>
             <QRCodeSVG value={PARK_ALL} size={260} level="M" />
             <div className="name">PARK ALL CARS</div>
             <div className="sub">Ends every current assignment. Keep with the admin.</div>
+            <button className="btn-sm no-print" style={{ marginTop: 8 }} onClick={() => one(parkAll)}>PNG</button>
           </div>
-          {items.map(c => (
-            <div className="qr-card" key={c.id}>
-              <QRCodeSVG value={encodeParkCar(c.code)} size={140} level="M" />
-              <div className="name">PARK {c.plate}</div>
-              <div className="sub">{c.label}</div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="qr-sheet">
-          {shown.map(it => (
+        )}
+        {shown.map(it => {
+          const s = spec(it)
+          return (
             <div className={'qr-card' + (kind === 'cars' ? ' big' : '')} key={it.id}>
-              <QRCodeSVG value={kind === 'drivers' ? encodeDriver(it.code) : encodeCar(it.code)} size={kind === 'cars' ? 220 : 150} level="M" />
-              <div className="name">{kind === 'drivers' ? it.full_name : it.plate}</div>
-              <div className="sub">{kind === 'drivers' ? (ev.event?.name || '') : it.label}</div>
-              <div className="sub" style={{ fontFamily: 'monospace', fontSize: 10 }}>{it.code}</div>
+              <QRCodeSVG value={s.value} size={kind === 'cars' ? 220 : 150} level="M" />
+              <div className="name">{s.title}</div>
+              <div className="sub">{s.subtitle}</div>
+              {s.footer && <div className="sub" style={{ fontFamily: 'monospace', fontSize: 10 }}>{s.footer}</div>}
+              <button className="btn-sm no-print" style={{ marginTop: 8 }} onClick={() => one(s)}>PNG</button>
             </div>
-          ))}
-        </div>
-      )}
+          )
+        })}
+      </div>
     </div>
   )
 }
