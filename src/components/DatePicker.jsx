@@ -27,7 +27,7 @@ export function DatePicker({ value, onChange, placeholder = 'Pick a date', allow
 }
 
 // Date + time picker. value/onChange use 'YYYY-MM-DDTHH:mm' strings (local/Dubai time).
-export function DateTimePicker({ value, onChange, style }) {
+export function DateTimePicker({ value, onChange, style, placeholder = 'Pick a date' }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   useOutside(ref, () => setOpen(false))
@@ -39,8 +39,8 @@ export function DateTimePicker({ value, onChange, style }) {
     <div className="dp" ref={ref} style={style}>
       <button type="button" className="dp-btn" onClick={() => setOpen(o => !o)}>
         <CalIcon />
-        <span>{date && isValid(date) ? format(date, 'EEE d MMM yyyy') : 'Pick a date'}</span>
-        <span className="dp-time">{timePart || '12:00'}</span>
+        <span className={value ? '' : 'muted'}>{date && isValid(date) ? format(date, 'EEE d MMM yyyy') : placeholder}</span>
+        {value && <span className="dp-time">{timePart}</span>}
       </button>
       {open && (
         <div className="dp-pop">

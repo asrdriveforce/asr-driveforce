@@ -4,7 +4,7 @@ import { useAuth } from '../lib/auth'
 import { fmtFull, csv, download } from '../lib/format'
 import { useEvents, EventPicker } from '../lib/useEvents'
 import { Kind } from './Dashboard'
-import { DatePicker } from '../components/DatePicker'
+import { DateTimePicker } from '../components/DatePicker'
 import { FormModal } from '../components/Modal'
 
 // Full scan log with filters, void, and CSV export.
@@ -25,8 +25,8 @@ export default function Records() {
     if (ev.eventId) query = query.eq('event_id', ev.eventId)
     if (kind) query = query.eq('kind', kind)
     if (!showVoided) query = query.eq('voided', false)
-    if (from) query = query.gte('scanned_at', new Date(from + 'T00:00:00+04:00').toISOString())
-    if (to) query = query.lte('scanned_at', new Date(to + 'T23:59:59+04:00').toISOString())
+    if (from) query = query.gte('scanned_at', new Date(from + ':00+04:00').toISOString())
+    if (to) query = query.lte('scanned_at', new Date(to + ':59+04:00').toISOString())
     const { data } = await query
     setRows(data || [])
   }
@@ -65,8 +65,9 @@ export default function Records() {
         <select className="select-inline" value={kind} onChange={e => setKind(e.target.value)}>
           <option value="">All types</option><option value="assign">Assign</option><option value="checkin">Check-in</option><option value="park_car">Park car</option><option value="park_all">Park all</option>
         </select>
-        <DatePicker value={from} onChange={setFrom} placeholder="From" style={{ minWidth: 150 }} />
-        <DatePicker value={to} onChange={setTo} placeholder="To" style={{ minWidth: 150 }} />
+        <div className="row" style={{ gap: 6 }}><span className="muted small">From</span><DateTimePicker value={from} onChange={setFrom} style={{ minWidth: 230 }} /></div>
+        <div className="row" style={{ gap: 6 }}><span className="muted small">To</span><DateTimePicker value={to} onChange={setTo} style={{ minWidth: 230 }} /></div>
+        {(from || to) && <button className="btn-sm btn-ghost" onClick={() => { setFrom(''); setTo('') }}>Clear</button>}
         <label style={{ margin: 0 }} className="row"><input type="checkbox" checked={showVoided} onChange={e => setShowVoided(e.target.checked)} /> show voided</label>
       </div>
       <div className="card">
