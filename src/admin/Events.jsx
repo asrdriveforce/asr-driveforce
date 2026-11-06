@@ -16,6 +16,11 @@ export default function Events() {
   async function toggleArchive(e) {
     await supabase.from('events').update({ archived: !e.archived }).eq('id', e.id); ev.reload()
   }
+  async function remove(e) {
+    if (!window.confirm(`Delete event "${e.name}"? Cars and drivers in it are kept but lose their event. This cannot be undone.`)) return
+    const { error } = await supabase.from('events').delete().eq('id', e.id)
+    if (error) setErr(error.code === '23503' ? `"${e.name}" has scan records, so it can't be deleted. Archive it instead.` : error.message); else { setErr(''); ev.reload() }
+  }
   async function rename(e) {
     const n = window.prompt('Event name', e.name); if (!n || n === e.name) return
     await supabase.from('events').update({ name: n }).eq('id', e.id); ev.reload()
@@ -24,8 +29,8 @@ export default function Events() {
   return (
     <div>
       <h1>Events</h1>
+      {err && <div className="alert bad">{err}</div>}
       <form className="card grid two" onSubmit={add}>
-        {err && <div className="alert bad" style={{ gridColumn: '1/-1' }}>{err}</div>}
         <div style={{ gridColumn: '1/-1' }}><label>Event name</label><input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Yas Marina November 2026" required /></div>
         <div><label>Starts (optional)</label><input type="date" value={starts} onChange={e => setStarts(e.target.value)} /></div>
         <div><label>Ends (optional)</label><input type="date" value={ends} onChange={e => setEnds(e.target.value)} /></div>
@@ -40,7 +45,7 @@ export default function Events() {
               <td><strong>{e.name}</strong></td>
               <td className="muted">{e.starts_on || ''}{e.ends_on ? ` → ${e.ends_on}` : ''}</td>
               <td>{e.archived ? <span className="badge">Archived</span> : <span className="badge ok">Active</span>}</td>
-              <td className="row"><button className="btn-sm btn-ghost" onClick={() => rename(e)}>Rename</button><button className="btn-sm btn-ghost" onClick={() => toggleArchive(e)}>{e.archived ? 'Unarchive' : 'Archive'}</button></td>
+              <td className="row"><button className="btn-sm btn-ghost" onClick={() => rename(e)}>Rename</button><button className="btn-sm btn-ghost" onClick={() => toggleArchive(e)}>{e.archived ? 'Unarchive' : 'Archive'}</button><button className="btn-sm btn-danger" onClick={() => remove(e)}>Delete</button></td>
             </tr>
           ))}</tbody>
         </table></div>

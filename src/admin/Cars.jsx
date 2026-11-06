@@ -33,6 +33,11 @@ export default function Cars() {
     setBulk(''); load()
   }
   async function toggle(c) { await supabase.from('cars').update({ active: !c.active }).eq('id', c.id); load() }
+  async function remove(c) {
+    if (!window.confirm(`Delete car ${c.plate}? This cannot be undone.`)) return
+    const { error } = await supabase.from('cars').delete().eq('id', c.id)
+    if (error) setErr(error.code === '23503' ? `${c.plate} has scan records, so it can't be deleted. Deactivate it instead.` : error.message); else { setErr(''); load() }
+  }
   async function edit(c) {
     const p = window.prompt('Plate', c.plate); if (p === null) return
     const l = window.prompt('Label (model, colour, number…)', c.label); if (l === null) return
@@ -46,10 +51,10 @@ export default function Cars() {
         <div className="row"><EventPicker {...ev} /><Link className="btn btn-sm" to="/admin/print/cars">Print car codes</Link><Link className="btn btn-sm" to="/admin/print/park">Print park codes</Link></div>
       </div>
       {!ev.eventId && <div className="alert warn">Create an event first.</div>}
+      {err && <div className="alert bad">{err}</div>}
       <div className="grid two">
         <form className="card stack" onSubmit={add}>
           <h2>Add one</h2>
-          {err && <div className="alert bad">{err}</div>}
           <div><label>Licence plate</label><input value={plate} onChange={e => setPlate(e.target.value)} required /></div>
           <div><label>Label (optional)</label><input value={label} onChange={e => setLabel(e.target.value)} placeholder="e.g. Urus, white, #7" /></div>
           <button className="btn-primary" disabled={!ev.eventId}>Add car</button>
@@ -68,7 +73,7 @@ export default function Cars() {
             <tr key={c.id} style={{ opacity: c.active ? 1 : .5 }}>
               <td className="mono"><strong>{c.plate}</strong></td><td>{c.label}</td><td className="mono small muted">{c.code}</td>
               <td>{c.active ? <span className="badge ok">Active</span> : <span className="badge">Inactive</span>}</td>
-              <td className="row"><button className="btn-sm btn-ghost" onClick={() => edit(c)}>Edit</button><button className="btn-sm btn-ghost" onClick={() => toggle(c)}>{c.active ? 'Deactivate' : 'Activate'}</button></td>
+              <td className="row"><button className="btn-sm btn-ghost" onClick={() => edit(c)}>Edit</button><button className="btn-sm btn-ghost" onClick={() => toggle(c)}>{c.active ? 'Deactivate' : 'Activate'}</button><button className="btn-sm btn-danger" onClick={() => remove(c)}>Delete</button></td>
             </tr>
           ))}</tbody>
         </table></div>

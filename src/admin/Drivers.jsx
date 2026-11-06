@@ -58,6 +58,11 @@ export default function Drivers() {
   }
 
   async function toggle(d) { await supabase.from('drivers').update({ active: !d.active }).eq('id', d.id); load() }
+  async function remove(d) {
+    if (!window.confirm(`Delete ${d.full_name}? This cannot be undone.`)) return
+    const { error } = await supabase.from('drivers').delete().eq('id', d.id)
+    if (error) setErr(error.code === '23503' ? `${d.full_name} has scan records, so they can't be deleted. Deactivate instead.` : error.message); else { setErr(''); load() }
+  }
   async function edit(d) {
     const n = window.prompt('Name', d.full_name); if (n === null) return
     const p = window.prompt('Phone', d.phone); if (p === null) return
@@ -154,7 +159,7 @@ export default function Drivers() {
               <td className="muted">{d.phone}</td><td className="muted">{d.email}</td>
               <td><button className="btn-sm btn-ghost" onClick={() => navigator.clipboard?.writeText(driverLink(d.code))}>Copy link</button></td>
               <td>{d.active ? <span className="badge ok">Active</span> : <span className="badge">Inactive</span>}</td>
-              <td className="row"><button className="btn-sm btn-ghost" onClick={() => edit(d)}>Edit</button><button className="btn-sm btn-ghost" onClick={() => toggle(d)}>{d.active ? 'Deactivate' : 'Activate'}</button></td>
+              <td className="row"><button className="btn-sm btn-ghost" onClick={() => edit(d)}>Edit</button><button className="btn-sm btn-ghost" onClick={() => toggle(d)}>{d.active ? 'Deactivate' : 'Activate'}</button><button className="btn-sm btn-danger" onClick={() => remove(d)}>Delete</button></td>
             </tr>
           ))}</tbody>
         </table></div>

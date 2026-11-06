@@ -210,3 +210,7 @@ alter default privileges in schema public grant select, insert, update on tables
 insert into profiles (id, full_name, role)
 select u.id, coalesce(u.raw_user_meta_data->>'full_name',''), 'operator'
 from auth.users u left join profiles p on p.id = u.id where p.id is null;
+
+-- ---------- Delete (admin only; rows with scans are protected by foreign keys) ----------
+grant delete on events, cars, drivers to authenticated;
+alter default privileges in schema public grant delete on tables to authenticated;
