@@ -24,7 +24,7 @@ export default function Dashboard() {
 
     const since = new Date(); since.setHours(since.getHours() - 36)
     const { data: scans } = await supabase.from('scans')
-      .select('id,kind,scanned_at,voided,car:cars(plate),driver:drivers(full_name),operator:profiles(full_name)')
+      .select('id,kind,scanned_at,voided,car:cars(plate),driver:drivers(full_name),operator:profiles!scans_operator_id_fkey(full_name)')
       .eq('event_id', ev.eventId).gte('scanned_at', since.toISOString()).order('scanned_at', { ascending: false }).limit(300)
     const tk = dayKey(new Date())
     const todays = (scans || []).filter(s => !s.voided && dayKey(s.scanned_at) === tk)

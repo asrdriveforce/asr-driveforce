@@ -9,7 +9,7 @@ import { submitScan, startQueueWorker, pendingCount } from '../lib/queue'
 const MODES = {
   assign: { title: 'Driver into car', hint1: 'Scan the CAR code', hint2: 'Now scan the DRIVER' },
   checkin: { title: 'Check in', hint1: 'Scan the DRIVER' },
-  park: { title: 'Park', hint1: 'Scan a PARK code (car or all)' },
+  park: { title: 'Park', hint1: 'Scan the CAR to park it' },
 }
 
 // One shared AudioContext, unlocked by the first tap (iOS requires a user gesture before any sound).
@@ -122,7 +122,14 @@ export default function Scan() {
         return show('ok', `${dr.full_name} checked in${ok ? '' : ' (queued)'}`)
       }
 
-      if (mode === 'park') return show('warn', 'That is not a park code')
+      if (mode === 'park') {
+        if (d.type !== 'C') return show('warn', 'Scan a car code')
+        const c = await lookup('cars', d.code)
+        if (!c) return show('bad', 'Unknown car')
+        const ok = await record({ kind: 'park_car', car_id: c.id })
+        done(text); setCar(null)
+        return show('ok', `${c.plate} PARKED${ok ? '' : ' (queued)'}`)
+      }
 
       // assign mode
       if (d.type === 'C') {

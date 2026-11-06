@@ -20,7 +20,7 @@ export default function Records() {
 
   async function load() {
     let query = supabase.from('scans')
-      .select('id,kind,scanned_at,voided,void_reason,car:cars(plate,label),driver:drivers(full_name),operator:profiles(full_name)')
+      .select('id,kind,scanned_at,voided,void_reason,car:cars(plate,label),driver:drivers(full_name),operator:profiles!scans_operator_id_fkey(full_name)')
       .order('scanned_at', { ascending: false }).limit(2000)
     if (ev.eventId) query = query.eq('event_id', ev.eventId)
     if (kind) query = query.eq('kind', kind)
