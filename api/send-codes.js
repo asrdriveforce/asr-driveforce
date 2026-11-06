@@ -42,9 +42,9 @@ export default async function handler(req, res) {
       const png = await QRCode.toBuffer(`DF:D:${d.code}`, { width: 600, margin: 2, errorCorrectionLevel: 'M' })
       const html = `
         <div style="font-family:'Avenir Next',Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;color:#111">
-          <h2 style="margin:0 0 8px">${esc(event_name || 'Your driver code')}</h2>
+          <h2 style="margin:0 0 8px">${esc(event_name || 'Your event code')}</h2>
           <p>Hi ${esc(d.full_name)},</p>
-          <p>${esc(intro || 'Here is your personal driver code. Show it to the operator when you check in and when you get into a car. The attached image works too.')}</p>
+          <p>${esc(intro || 'Your dedicated event code. Please present at check in.')}</p>
           <p style="text-align:center;margin:24px 0"><img src="cid:qr" alt="QR code" width="260" height="260" style="border:1px solid #ddd;border-radius:8px"></p>
           <p style="text-align:center"><a href="${link}" style="display:inline-block;background:#1a56db;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700">Open my code</a></p>
           <p style="color:#666;font-size:13px">Link: <a href="${link}">${link}</a><br>Code: ${d.code}</p>
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
         const { error } = await resend.emails.send({
           from: process.env.MAIL_FROM,
           to: d.email,
-          subject: subject || `Your driver code${event_name ? ' – ' + event_name : ''}`,
+          subject: subject || `Your event code${event_name ? ' – ' + event_name : ''}`,
           html,
           attachments: [{ filename: `driver-code-${d.code}.png`, content: png, contentId: 'qr' }],
         })
