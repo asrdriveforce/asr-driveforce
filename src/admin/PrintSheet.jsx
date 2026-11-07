@@ -38,14 +38,14 @@ export default function PrintSheet() {
 
   // One descriptor per code, used for both single PNG and zip
   function spec(it) {
-    const base = { logo: logoSrc }
+    const base = { logo: logoSrc, logoMax: kind === 'drivers' ? 135 : 95 }   // smaller logo on car and equipment codes
     if (kind === 'drivers') return { ...base, value: encodeDriver(it.code), title: it.full_name, subtitle: evName, name: `driver_${safeName(it.full_name)}_${it.code}.png` }
     if (kind === 'cars') return { ...base, value: encodeCar(it.code), title: it.plate, subtitle: it.label, name: `car_${safeName(it.plate)}.png` }
     if (kind === 'equipment') return { ...base, value: encodeEquipment(it.code), title: it.name, subtitle: `${it.slots} ${it.slots === 1 ? 'unit' : 'units'}`, name: `equipment_${safeName(it.name)}.png` }
     return { ...base, value: encodeParkCar(it.code), title: `PARK ${it.plate}`, subtitle: it.label, name: `park_${safeName(it.plate)}.png` }
   }
-  const parkAll = { logo: logoSrc, value: PARK_ALL, title: 'PARK ALL CARS', subtitle: 'Ends every current assignment', name: 'park_ALL.png' }
-  const returnAll = { logo: logoSrc, value: RETURN_ALL, title: 'ALL EQUIPMENT BACK', subtitle: 'Marks every outstanding unit returned', name: 'equipment_return_ALL.png' }
+  const parkAll = { logo: logoSrc, logoMax: 95, value: PARK_ALL, title: 'PARK ALL CARS', subtitle: 'Ends every current assignment', name: 'park_ALL.png' }
+  const returnAll = { logo: logoSrc, logoMax: 95, value: RETURN_ALL, title: 'ALL EQUIPMENT BACK', subtitle: 'Marks every outstanding unit returned', name: 'equipment_return_ALL.png' }
 
   async function one(s) { saveBlob(await qrPng(s), s.name) }
   async function all() {
@@ -105,7 +105,7 @@ export default function PrintSheet() {
           const s = spec(it)
           return (
             <div className={'qr-card' + (kind !== 'drivers' ? ' big' : '')} key={it.id}>
-              {logoSrc && <img src={logoSrc} alt="" style={{ height: kind === 'drivers' ? 22 : 30, width: 'auto', margin: '0 auto 8px', display: 'block' }} />}
+              {logoSrc && <img src={logoSrc} alt="" style={{ height: kind === 'drivers' ? 22 : 20, width: 'auto', margin: '0 auto 10px', display: 'block' }} />}
               <QRCodeSVG value={s.value} size={kind !== 'drivers' ? 220 : 150} level="M" />
               <div className="name">{s.title}</div>
               <div className="sub">{s.subtitle}</div>

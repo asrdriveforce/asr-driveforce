@@ -9,13 +9,13 @@ function loadImage(src) {
   return new Promise((res) => { const im = new Image(); im.onload = () => { logoCache[src] = im; res(im) }; im.onerror = () => res(null); im.src = src })
 }
 
-export async function qrPng({ value, title, subtitle = '', footer = '', logo = null }) {
+export async function qrPng({ value, title, subtitle = '', footer = '', logo = null, logoMax = 135 }) {
   const W = 1200, pad = 80
   const img = await loadImage(logo)
   const qrSize = img ? 700 : W - pad * 2            // smaller code when a logo shares the badge
   const qrX = Math.round((W - qrSize) / 2)
-  const logoH = img ? Math.min(135, Math.round(img.height * Math.min(1, (W - pad * 2) / img.width))) : 0
-  const logoBlock = img ? logoH + 160 : 0
+  const logoH = img ? Math.min(logoMax, Math.round(img.height * Math.min(1, (W - pad * 2) / img.width))) : 0
+  const logoBlock = img ? logoH + Math.round(logoMax * 1.1) : 0
   const titleH = 150, subH = subtitle ? 70 : 0, footH = footer ? 50 : 0
   const H = pad + logoBlock + qrSize + 40 + titleH + subH + footH + pad / 2
   const c = document.createElement('canvas'); c.width = W; c.height = H
