@@ -24,7 +24,6 @@ export default function DriverPage() {
         <h1 style={{ marginBottom: 14 }}>{d.full_name}</h1>
         <div className="qr-card big" style={{ display: 'inline-block' }}>
           <QRCodeSVG value={encodeDriver(d.code)} size={240} level="M" />
-          <div className="sub mono">{d.code}</div>
         </div>
         <p className="muted" style={{ fontSize: 11, lineHeight: 1.4, marginTop: 14 }}>Your name and contact details are held by ASR Strategies LLC to record which vehicle you drove and when, to attribute traffic fines and incidents to the responsible driver, and to share that with the event organiser or authorities where required. Data is processed on servers outside the UAE. Contact events@asr.ae to access or correct your details.</p>
       </div>

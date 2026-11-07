@@ -233,7 +233,6 @@ export default function Scan() {
           <div className="qr-card big" style={{ display: 'inline-block' }}>
             <QRCodeSVG value={encodeDriver(newDriver.code)} size={200} level="M" />
             <div className="name">{newDriver.full_name}</div>
-            <div className="sub mono">{newDriver.code}</div>
           </div>
           <p className="muted small">Scan this from another phone, or send the link.</p>
           <div className="row" style={{ justifyContent: 'center' }}>
