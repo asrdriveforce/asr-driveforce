@@ -14,6 +14,15 @@ export default function PrintSheet() {
   const [onlyNew, setOnlyNew] = useState(false)
   const [sinceDays, setSinceDays] = useState(1)
   const [busy, setBusy] = useState(false)
+  // Badge logo: 'asr' (bundled), a data URL from an upload, or '' for none. Remembered on this computer.
+  const [logo, setLogo] = useState(() => { try { return localStorage.getItem('df_badge_logo') ?? 'asr' } catch { return 'asr' } })
+  function chooseLogo(v) { setLogo(v); try { localStorage.setItem('df_badge_logo', v) } catch { /* ignore */ } }
+  function onLogoFile(e) {
+    const f = e.target.files?.[0]; if (!f) return
+    const reader = new FileReader(); reader.onload = () => chooseLogo(String(reader.result)); reader.readAsDataURL(f)
+    e.target.value = ''
+  }
+  const logoSrc = logo === 'asr' ? '/logo.png' : logo
 
   useEffect(() => {
     if (!ev.eventId) return
@@ -29,12 +38,13 @@ export default function PrintSheet() {
 
   // One descriptor per code, used for both single PNG and zip
   function spec(it) {
-    if (kind === 'drivers') return { value: encodeDriver(it.code), title: it.full_name, subtitle: evName, footer: it.code, name: `driver_${safeName(it.full_name)}_${it.code}.png` }
-    if (kind === 'cars') return { value: encodeCar(it.code), title: it.plate, subtitle: it.label, footer: it.code, name: `car_${safeName(it.plate)}.png` }
-    if (kind === 'equipment') return { value: encodeEquipment(it.code), title: it.name, subtitle: `${it.slots} ${it.slots === 1 ? 'unit' : 'units'}`, footer: it.code, name: `equipment_${safeName(it.name)}.png` }
-    return { value: encodeParkCar(it.code), title: `PARK ${it.plate}`, subtitle: it.label, name: `park_${safeName(it.plate)}.png` }
+    const base = { logo: logoSrc }
+    if (kind === 'drivers') return { ...base, value: encodeDriver(it.code), title: it.full_name, subtitle: evName, footer: it.code, name: `driver_${safeName(it.full_name)}_${it.code}.png` }
+    if (kind === 'cars') return { ...base, value: encodeCar(it.code), title: it.plate, subtitle: it.label, footer: it.code, name: `car_${safeName(it.plate)}.png` }
+    if (kind === 'equipment') return { ...base, value: encodeEquipment(it.code), title: it.name, subtitle: `${it.slots} ${it.slots === 1 ? 'unit' : 'units'}`, footer: it.code, name: `equipment_${safeName(it.name)}.png` }
+    return { ...base, value: encodeParkCar(it.code), title: `PARK ${it.plate}`, subtitle: it.label, name: `park_${safeName(it.plate)}.png` }
   }
-  const parkAll = { value: PARK_ALL, title: 'PARK ALL CARS', subtitle: 'Ends every current assignment', name: 'park_ALL.png' }
+  const parkAll = { logo: logoSrc, value: PARK_ALL, title: 'PARK ALL CARS', subtitle: 'Ends every current assignment', name: 'park_ALL.png' }
 
   async function one(s) { saveBlob(await qrPng(s), s.name) }
   async function all() {
@@ -61,7 +71,17 @@ export default function PrintSheet() {
           <button className="btn-primary btn-sm" onClick={() => window.print()}>Print sheet</button>
         </div>
       </div>
-      <p className="muted small no-print">{shown.length} codes. PNGs are 1200px wide (about 10cm at 300dpi) with the name printed under the code.</p>
+      <div className="card row no-print" style={{ padding: '10px 14px' }}>
+        <span className="small muted">Badge logo</span>
+        <div className="seg">
+          <button className={logo === 'asr' ? 'on' : ''} onClick={() => chooseLogo('asr')}>ASR</button>
+          <button className={logo && logo !== 'asr' ? 'on' : ''} onClick={() => document.getElementById('badge-logo-file').click()}>Upload…</button>
+          <button className={!logo ? 'on' : ''} onClick={() => chooseLogo('')}>None</button>
+        </div>
+        <input id="badge-logo-file" type="file" accept="image/png,image/jpeg,image/svg+xml" style={{ display: 'none' }} onChange={onLogoFile} />
+        {logoSrc && <img src={logoSrc} alt="" style={{ height: 28, width: 'auto', marginLeft: 6 }} />}
+        <span className="small muted" style={{ marginLeft: 'auto' }}>{shown.length} codes · PNGs 1200px wide (≈10cm at 300dpi)</span>
+      </div>
 
       <div className="qr-sheet">
         {kind === 'park' && (
@@ -76,6 +96,7 @@ export default function PrintSheet() {
           const s = spec(it)
           return (
             <div className={'qr-card' + (kind !== 'drivers' ? ' big' : '')} key={it.id}>
+              {logoSrc && <img src={logoSrc} alt="" style={{ height: kind === 'drivers' ? 22 : 30, width: 'auto', margin: '0 auto 8px', display: 'block' }} />}
               <QRCodeSVG value={s.value} size={kind !== 'drivers' ? 220 : 150} level="M" />
               <div className="name">{s.title}</div>
               <div className="sub">{s.subtitle}</div>
