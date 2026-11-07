@@ -51,7 +51,7 @@ export default function PrintSheet() {
   async function all() {
     setBusy(true)
     try {
-      const list = kind === 'park' ? [parkAll, returnAll, ...shown.map(spec)] : shown.map(spec)
+      const list = kind === 'park' ? [parkAll, ...shown.map(spec)] : kind === 'equipment' ? [returnAll, ...shown.map(spec)] : shown.map(spec)
       await zipPngs(list, `driveforce_${kind}_${safeName(evName)}.zip`)
     } finally { setBusy(false) }
   }
@@ -93,7 +93,7 @@ export default function PrintSheet() {
             <button className="btn-sm no-print" style={{ marginTop: 8 }} onClick={() => one(parkAll)}>PNG</button>
           </div>
         )}
-        {kind === 'park' && (
+        {kind === 'equipment' && (
           <div className="qr-card big" style={{ gridColumn: '1 / -1' }}>
             <QRCodeSVG value={RETURN_ALL} size={260} level="M" />
             <div className="name">ALL EQUIPMENT BACK</div>
