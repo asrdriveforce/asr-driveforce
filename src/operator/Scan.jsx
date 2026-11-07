@@ -10,7 +10,7 @@ const MODES = {
   assign: { title: 'Driver into car', label: 'Car', hint1: 'Scan the CAR code', hint2: 'Now scan the DRIVER' },
   checkin: { title: 'Check in', label: 'Check in', hint1: 'Scan the DRIVER' },
   park: { title: 'Park', label: 'Park', hint1: 'Scan the CAR to park it' },
-  issue: { title: 'Issue equipment', label: 'Issue', hint1: 'Scan the EQUIPMENT code', hint2: 'Now scan the PERSON' },
+  issue: { title: 'Equipment out', label: 'Equipment', hint1: 'Scan the EQUIPMENT code', hint2: 'Now scan the PERSON' },
   ret: { title: 'Return equipment', label: 'Return', hint1: 'Scan the EQUIPMENT code' },
 }
 
