@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { FormModal } from '../components/Modal'
+import { ColourDot } from './Devices'
 
 // Accounts are created in the Supabase dashboard (Authentication → Users → Add user).
 // This page sets their name, role and active flag.
@@ -31,11 +32,12 @@ export default function Operators() {
         <p className="muted small">To add an operator: in Supabase go to Authentication → Users → Add user → Create new user, enter their email and a password, tick "Auto Confirm User", and create. They then appear here as an operator. Set their display name below (it's what shows on scan records), then assign them to events on the Events page; operators can only scan at live events they're assigned to.</p>
         {err && <div className="alert bad">{err}</div>}
         <div className="table-wrap"><table>
-          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th></th></tr></thead>
           <tbody>{rows.map(r => (
             <tr key={r.id} style={{ opacity: r.active ? 1 : .5 }}>
               <td><strong>{r.full_name || <span className="muted">(no name)</span>}</strong>{r.id === user.id && <span className="badge accent" style={{ marginLeft: 6 }}>you</span>}</td>
               <td className="muted">{r.email}</td>
+              <td>{r.device_colour ? <><ColourDot colour={r.device_colour} />{r.device_colour}{r.device_phone && <span className="muted mono small"> · {r.device_phone}</span>}</> : <span className="muted">—</span>}</td>
               <td>
                 <select className="select-inline" value={r.role} disabled={r.id === user.id} style={{ minWidth: 120 }} onChange={e => update(r.id, { role: e.target.value })}>
                   <option value="operator">Operator</option><option value="admin">Admin</option>

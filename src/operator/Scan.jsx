@@ -52,6 +52,7 @@ export default function Scan() {
   const [paused, setPaused] = useState(false)
   const [pending, setPending] = useState(pendingCount())
   const [liveEvents, setLiveEvents] = useState(null)   // events this user may scan for right now
+  const [device, setDevice] = useState(null)
   const [showWalkIn, setShowWalkIn] = useState(false)
   const [newDriver, setNewDriver] = useState(null)
   const busy = useRef(false)
@@ -60,6 +61,7 @@ export default function Scan() {
   async function loadEvents() {
     const { data } = await supabase.rpc('my_live_events')
     setLiveEvents(data || [])
+    supabase.from('devices').select('colour,phone').eq('assigned_to', user.id).eq('active', true).limit(1).then(({ data: d }) => setDevice(d?.[0] || null))
     return data || []
   }
   useEffect(() => {
@@ -231,7 +233,7 @@ export default function Scan() {
   return (
     <div className="stack" onPointerDown={primeAudio}>
       <div className="row between">
-        <div><h1>{MODES[mode].title}</h1><div className="muted small">{profile?.full_name} · {liveEvents === null ? '…' : liveEvents.length ? liveEvents.map(e => e.name).join(', ') : 'No live event'}</div></div>
+        <div><h1>{MODES[mode].title}</h1><div className="muted small">{profile?.full_name}{device ? ` · ${device.colour} phone` : ''} · {liveEvents === null ? '…' : liveEvents.length ? liveEvents.map(e => e.name).join(', ') : 'No live event'}</div></div>
         {pending > 0 && <span className="badge warn">{pending} queued</span>}
       </div>
 

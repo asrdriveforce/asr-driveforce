@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useEvents } from '../lib/useEvents'
 import { DatePicker } from '../components/DatePicker'
 import { FormModal, ConfirmModal } from '../components/Modal'
+import { ColourDot } from './Devices'
 
 const fmtDay = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
 const todayDubai = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Dubai' })
@@ -19,7 +20,7 @@ export default function Events() {
 
   async function loadOps() {
     const [{ data: o }, { data: a }] = await Promise.all([
-      supabase.from('operators').select('id,full_name,email,role,active').order('full_name'),
+      supabase.from('operators').select('id,full_name,email,role,active,device_colour,device_phone').order('full_name'),
       supabase.from('event_operators').select('event_id,profile_id'),
     ])
     setOps((o || []).filter(x => x.active && x.role !== 'admin'))
@@ -97,7 +98,7 @@ export default function Events() {
                       {ops.length === 0 && <span className="muted small">No operator accounts yet.</span>}
                       {ops.map(o => (
                         <label key={o.id} className="row" style={{ margin: 0, fontSize: 14, color: 'var(--text)', gap: 8 }}>
-                          <input type="checkbox" checked={a.has(o.id)} onChange={() => toggleOp(e, o.id)} /> {o.full_name || o.email}
+                          <input type="checkbox" checked={a.has(o.id)} onChange={() => toggleOp(e, o.id)} /> <ColourDot colour={o.device_colour} />{o.full_name || o.email}{o.device_phone && <span className="muted small mono"> · {o.device_phone}</span>}
                         </label>
                       ))}
                     </div>
