@@ -51,25 +51,24 @@ export default function Scan() {
   const [flash, setFlash] = useState(null)   // { kind: 'ok'|'bad'|'warn', text }
   const [paused, setPaused] = useState(false)
   const [pending, setPending] = useState(pendingCount())
-  const [event, setEvent] = useState(null)
+  const [liveEvents, setLiveEvents] = useState(null)   // events this user may scan for right now
   const [showWalkIn, setShowWalkIn] = useState(false)
   const [newDriver, setNewDriver] = useState(null)
   const busy = useRef(false)
   const recent = useRef({ text: '', until: 0 })   // ignore a just-processed code for a few seconds
 
-  async function loadEvent() {
-    // Most recent non-archived event is the one new records are filed under
-    const { data } = await supabase.from('events').select('id,name').eq('archived', false).order('created_at', { ascending: false }).limit(1)
-    const e = data?.[0] || null
-    setEvent(e)
-    return e
+  async function loadEvents() {
+    const { data } = await supabase.rpc('my_live_events')
+    setLiveEvents(data || [])
+    return data || []
   }
   useEffect(() => {
     startQueueWorker(() => setPending(pendingCount()))
-    loadEvent()
-    const onVis = () => { if (document.visibilityState === 'visible') loadEvent() }
+    loadEvents()
+    const onVis = () => { if (document.visibilityState === 'visible') loadEvents() }
     document.addEventListener('visibilitychange', onVis)
-    return () => document.removeEventListener('visibilitychange', onVis)
+    const t = setInterval(loadEvents, 60000)
+    return () => { document.removeEventListener('visibilitychange', onVis); clearInterval(t) }
   }, [])
 
   function show(kind, text, ms = 2200) {
@@ -97,11 +96,18 @@ export default function Scan() {
   function withTimeout(promise, ms, fallback) {
     return Promise.race([promise, new Promise(res => setTimeout(() => res(fallback), ms))])
   }
+  // The database works out the event from the scanned item and refuses scans for events that aren't live
+  // or that this operator isn't assigned to. Those refusals come back as a reason, never queued.
   async function record(row, table = 'scans') {
-    const e = await withTimeout(loadEvent().catch(() => event), 3000, event)
-    const ok = await withTimeout(submitScan({ ...row, operator_id: user.id, event_id: e?.id || null }, table), 6000, false)
+    const r = await withTimeout(submitScan({ ...row, operator_id: user.id }, table), 6000, { ok: false, queued: true })
     setPending(pendingCount())
-    return ok
+    return r
+  }
+  function refused(r) {
+    if (r.reason === 'NOT_LIVE') return 'Event not live, or you are not assigned to it'
+    if (r.reason === 'NO_EVENT') return 'Item is not linked to an event'
+    if (r.reason === 'REJECTED') return 'Not saved: ' + (r.message || 'rejected')
+    return null
   }
   async function lookupEquipment(code) {
     const { data } = await supabase.rpc('equipment_by_code', { p_code: code })
@@ -119,12 +125,13 @@ export default function Scan() {
 
       // Park codes work from any mode
       if (d.type === 'PA') {
-        const ok = await record({ kind: 'park_all' })
+        const { data, error } = await supabase.rpc('park_all_live')
         done(text); setCar(null)
-        return show('ok', ok ? 'ALL CARS PARKED' : 'All parked (queued)', 2600)
+        if (error) return show('bad', 'Park all failed')
+        return show('ok', data ? `ALL CARS PARKED (${data} event${data === 1 ? '' : 's'})` : 'No live event', 2600)
       }
       if (d.type === 'RA') {
-        const { data, error } = await supabase.rpc('return_all_equipment', { p_event: event?.id || null })
+        const { data, error } = await supabase.rpc('return_all_equipment')
         done(text); setItem(null)
         if (error) return show('bad', 'Return all failed')
         return show('ok', data ? `ALL EQUIPMENT BACK (${data} item${data === 1 ? '' : 's'})` : 'Nothing was out', 2600)
@@ -132,9 +139,10 @@ export default function Scan() {
       if (d.type === 'PC') {
         const c = await lookup('cars', d.code)
         if (!c) return show('bad', 'Unknown car')
-        const ok = await record({ kind: 'park_car', car_id: c.id })
+        const r = await record({ kind: 'park_car', car_id: c.id })
         done(text); setCar(null)
-        return show('ok', `${c.plate} PARKED${ok ? '' : ' (queued)'}`)
+        if (refused(r)) return show('bad', refused(r))
+        return show('ok', `${c.plate} PARKED${r.ok ? '' : ' (queued)'}`)
       }
 
       if (mode === 'checkin') {
@@ -143,9 +151,10 @@ export default function Scan() {
         if (!dr) return show('bad', 'Unknown driver')
         const prior = await alreadyCheckedInToday(dr.id)
         if (prior) { done(text); return show('warn', `${dr.full_name} already checked in at ${prior}`) }
-        const ok = await record({ kind: 'checkin', driver_id: dr.id })
+        const r = await record({ kind: 'checkin', driver_id: dr.id })
         done(text)
-        return show('ok', `${dr.full_name} checked in${ok ? '' : ' (queued)'}`)
+        if (refused(r)) return show('bad', refused(r))
+        return show('ok', `${dr.full_name} checked in${r.ok ? '' : ' (queued)'}`)
       }
 
       if (mode === 'issue') {
@@ -159,9 +168,10 @@ export default function Scan() {
         if (!item) return show('warn', 'Scan the equipment first')
         const dr = await lookup('drivers', d.code)
         if (!dr) return show('bad', 'Unknown person')
-        const ok = await record({ kind: 'issue', equipment_id: item.id, driver_id: dr.id }, 'equipment_events')
+        const r = await record({ kind: 'issue', equipment_id: item.id, driver_id: dr.id }, 'equipment_events')
         done(text); setItem(null)
-        return show('ok', `${item.name} → ${dr.full_name}${ok ? '' : ' (queued)'}`, 2600)
+        if (refused(r)) return show('bad', refused(r))
+        return show('ok', `${item.name} → ${dr.full_name}${r.ok ? '' : ' (queued)'}`, 2600)
       }
 
       if (mode === 'ret') {
@@ -180,9 +190,10 @@ export default function Scan() {
         if (d.type !== 'C') return show('warn', 'Scan a car code')
         const c = await lookup('cars', d.code)
         if (!c) return show('bad', 'Unknown car')
-        const ok = await record({ kind: 'park_car', car_id: c.id })
+        const r = await record({ kind: 'park_car', car_id: c.id })
         done(text); setCar(null)
-        return show('ok', `${c.plate} PARKED${ok ? '' : ' (queued)'}`)
+        if (refused(r)) return show('bad', refused(r))
+        return show('ok', `${c.plate} PARKED${r.ok ? '' : ' (queued)'}`)
       }
 
       // assign mode
@@ -196,9 +207,10 @@ export default function Scan() {
         if (!car) return show('warn', 'Scan the car first')
         const dr = await lookup('drivers', d.code)
         if (!dr) return show('bad', 'Unknown driver')
-        const ok = await record({ kind: 'assign', car_id: car.id, driver_id: dr.id })
+        const r = await record({ kind: 'assign', car_id: car.id, driver_id: dr.id })
         done(text); setCar(null)
-        return show('ok', `${dr.full_name} → ${car.plate}${ok ? '' : ' (queued)'}`, 2600)
+        if (refused(r)) return show('bad', refused(r))
+        return show('ok', `${dr.full_name} → ${car.plate}${r.ok ? '' : ' (queued)'}`, 2600)
       }
     } finally { busy.current = false }
   }
@@ -209,16 +221,17 @@ export default function Scan() {
     const { item: it, back } = returning
     const slots = [...back].sort((a, b) => a - b)
     const missing = it.missing_slots.filter(n => !back.has(n))
-    const ok = await record({ kind: 'return', equipment_id: it.id, slots }, 'equipment_events')
+    const r = await record({ kind: 'return', equipment_id: it.id, slots }, 'equipment_events')
     setReturning(null); setPaused(false)
+    if (refused(r)) return show('bad', refused(r))
     if (!slots.length) return show('warn', `${it.name}: nothing returned`)
-    show(missing.length ? 'warn' : 'ok', `${it.name}: ${missing.length ? `MISSING ${missing.join(', ')}` : 'all returned'}${ok ? '' : ' (queued)'}`, 3000)
+    show(missing.length ? 'warn' : 'ok', `${it.name}: ${missing.length ? `MISSING ${missing.join(', ')}` : 'all returned'}${r.ok ? '' : ' (queued)'}`, 3000)
   }
 
   return (
     <div className="stack" onPointerDown={primeAudio}>
       <div className="row between">
-        <div><h1>{MODES[mode].title}</h1><div className="muted small">{profile?.full_name} · {event ? event.name : 'No active event'}</div></div>
+        <div><h1>{MODES[mode].title}</h1><div className="muted small">{profile?.full_name} · {liveEvents === null ? '…' : liveEvents.length ? liveEvents.map(e => e.name).join(', ') : 'No live event'}</div></div>
         {pending > 0 && <span className="badge warn">{pending} queued</span>}
       </div>
 
@@ -231,8 +244,11 @@ export default function Scan() {
         <button className="btn-sm" onClick={() => { setShowWalkIn(v => !v); setNewDriver(null) }}>+ Walk-in</button>
       </div>
 
+      {liveEvents && !liveEvents.length && (
+        <div className="alert warn">No live event for you right now. Scans will be refused until an admin sets the event live and assigns you to it.</div>
+      )}
       {showWalkIn ? (
-        <WalkIn event={event} onCreated={(d) => { setNewDriver(d); setShowWalkIn(false) }} onCancel={() => setShowWalkIn(false)} />
+        <WalkIn events={liveEvents || []} onCreated={(d) => { setNewDriver(d); setShowWalkIn(false) }} onCancel={() => setShowWalkIn(false)} />
       ) : newDriver ? (
         <div className="card center stack">
           <div className="alert ok">Driver added</div>
@@ -290,14 +306,16 @@ export default function Scan() {
   )
 }
 
-function WalkIn({ event, onCreated, onCancel }) {
+function WalkIn({ events, onCreated, onCancel }) {
   const [name, setName] = useState(''); const [phone, setPhone] = useState(''); const [email, setEmail] = useState('')
+  const [eventId, setEventId] = useState(events[0]?.id || '')
   const [err, setErr] = useState(''); const [busy, setBusy] = useState(false)
   async function submit(e) {
     e.preventDefault(); setBusy(true); setErr('')
     // Operators can insert but not read the drivers table, so the code is generated here and returned as-is.
     const code = Array.from(crypto.getRandomValues(new Uint8Array(6)), b => b.toString(16).padStart(2, '0')).join('')
-    const row = { full_name: name.trim(), phone: phone.trim(), email: email.trim(), walk_in: true, event_id: event?.id || null, code }
+    if (!eventId) { setBusy(false); return setErr('No live event to add the driver to') }
+    const row = { full_name: name.trim(), phone: phone.trim(), email: email.trim(), walk_in: true, event_id: eventId, code }
     const { error } = await supabase.from('drivers').insert(row)
     setBusy(false)
     if (error) return setErr(error.message)
@@ -307,6 +325,7 @@ function WalkIn({ event, onCreated, onCancel }) {
     <form className="card stack" onSubmit={submit}>
       <h2>Add walk-in driver</h2>
       {err && <div className="alert bad">{err}</div>}
+      {events.length > 1 && <div><label>Event</label><select value={eventId} onChange={e => setEventId(e.target.value)}>{events.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}</select></div>}
       <div><label>Full name</label><input value={name} onChange={e => setName(e.target.value)} required autoFocus /></div>
       <div><label>Phone (optional)</label><input value={phone} onChange={e => setPhone(e.target.value)} inputMode="tel" /></div>
       <div><label>Email (optional)</label><input value={email} onChange={e => setEmail(e.target.value)} inputMode="email" /></div>

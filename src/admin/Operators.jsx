@@ -28,7 +28,7 @@ export default function Operators() {
       {editing && <FormModal title="Display name" initial={editing} onClose={() => setEditing(null)} onSubmit={v => { setEditing(null); update(editing.id, { full_name: v.full_name.trim() }) }}
         fields={[{ name: 'full_name', label: 'Name shown on scan records', required: true, autoFocus: true }]} />}
       <div className="card">
-        <p className="muted small">To add an operator: in Supabase go to Authentication → Users → Add user → Create new user, enter their email and a password, tick "Auto Confirm User", and create. They then appear here as an operator. Set their display name below (it's what shows on scan records).</p>
+        <p className="muted small">To add an operator: in Supabase go to Authentication → Users → Add user → Create new user, enter their email and a password, tick "Auto Confirm User", and create. They then appear here as an operator. Set their display name below (it's what shows on scan records), then assign them to events on the Events page; operators can only scan at live events they're assigned to.</p>
         {err && <div className="alert bad">{err}</div>}
         <div className="table-wrap"><table>
           <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>

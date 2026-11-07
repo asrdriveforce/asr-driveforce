@@ -27,7 +27,7 @@ export function EventPicker({ events, eventId, setEventId, allowAll }) {
   return (
     <select className="select-inline" value={eventId} onChange={e => setEventId(e.target.value)}>
       {allowAll && <option value="">All events</option>}
-      {events.map(e => <option key={e.id} value={e.id}>{e.name}{e.archived ? ' (archived)' : ''}</option>)}
+      {events.map(e => <option key={e.id} value={e.id}>{e.live ? '● ' : ''}{e.name}{e.archived ? ' (archived)' : ''}</option>)}
     </select>
   )
 }
