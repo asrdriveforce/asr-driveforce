@@ -14,7 +14,7 @@ export async function qrPng({ value, title, subtitle = '', footer = '', logo = n
   const img = await loadImage(logo)
   const qrSize = img ? 700 : W - pad * 2            // smaller code when a logo shares the badge
   const qrX = Math.round((W - qrSize) / 2)
-  const logoH = img ? Math.min(150, Math.round(img.height * Math.min(1, (W - pad * 2) / img.width))) : 0
+  const logoH = img ? Math.min(135, Math.round(img.height * Math.min(1, (W - pad * 2) / img.width))) : 0
   const logoBlock = img ? logoH + 160 : 0
   const titleH = 150, subH = subtitle ? 70 : 0, footH = footer ? 50 : 0
   const H = pad + logoBlock + qrSize + 40 + titleH + subH + footH + pad / 2
