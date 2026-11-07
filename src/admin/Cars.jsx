@@ -100,9 +100,9 @@ export default function Cars() {
           <h2>Import a list</h2>
           <p className="muted small">CSV with columns Plate and Label (or Model). Header row optional; without one the order is plate, label. Save an Excel sheet as CSV first.</p>
           <input type="file" accept=".csv,.txt,.tsv" onChange={onFile} disabled={!ev.eventId} />
-          <p className="muted small">Or paste, one car per line: plate, label</p>
+          <p className="muted small">Manual add: one car per line, plate then label</p>
           <textarea rows={4} value={bulk} onChange={e => setBulk(e.target.value)} />
-          <button onClick={addBulk} disabled={!ev.eventId || !bulk.trim()}>Add pasted cars</button>
+          <button onClick={addBulk} disabled={!ev.eventId || !bulk.trim()}>Manual add</button>
         </div>
       </div>
       {preview && (
