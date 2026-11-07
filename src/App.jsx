@@ -35,11 +35,12 @@ function Shell({ children, admin }) {
     <div className={'app' + (admin ? '' : ' narrow')}>
       <div className="topbar no-print">
         <NavLink to="/" style={{ textDecoration: 'none' }}><Logo /></NavLink>
-        <div className="topbar-right">
-          <span className="user-chip hide-mobile">{profile?.full_name}</span>
-          {isAdmin && !admin && <NavLink className="btn btn-sm" to="/admin">Admin</NavLink>}
-          <button className="btn-sm btn-ghost" onClick={logout}>Log out</button>
-        </div>
+        {!admin && (
+          <div className="topbar-right">
+            {isAdmin && <NavLink className="btn btn-sm" to="/admin">Admin</NavLink>}
+            <button className="btn-sm btn-ghost" onClick={logout}>Log out</button>
+          </div>
+        )}
         {isAdmin && admin && (
           <nav className="nav">
             <NavLink to="/scan">Scan</NavLink>
@@ -57,6 +58,12 @@ function Shell({ children, admin }) {
         )}
       </div>
       {children}
+      {admin && (
+        <div className="footer no-print">
+          <span className="user-chip">{profile?.full_name}</span>
+          <button className="btn-sm btn-ghost" onClick={logout}>Log out</button>
+        </div>
+      )}
     </div>
   )
 }
