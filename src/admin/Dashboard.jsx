@@ -11,6 +11,7 @@ export default function Dashboard() {
   const [live, setLive] = useState({})
   const [today, setToday] = useState({ assigns: 0, checkins: 0, drivers: 0 })
   const [recent, setRecent] = useState([])
+  const [equipOut, setEquipOut] = useState([])
 
   async function load() {
     if (!ev.eventId) return
@@ -34,6 +35,8 @@ export default function Dashboard() {
       drivers: new Set(todays.filter(s => s.kind === 'assign').map(s => s.driver?.full_name)).size,
     })
     setRecent((scans || []).slice(0, 15))
+    const { data: eq } = await supabase.rpc('equipment_status')
+    setEquipOut((eq || []).filter(i => i.event_id === ev.eventId && i.missing_slots?.length))
   }
   useEffect(() => { load() }, [ev.eventId]) // eslint-disable-line
   useEffect(() => { const t = setInterval(load, 20000); return () => clearInterval(t) }) // eslint-disable-line
@@ -77,6 +80,18 @@ export default function Dashboard() {
         </table></div>
       </div>
 
+      {equipOut.length > 0 && (
+        <div className="card">
+          <div className="row between"><h2>Equipment out</h2><Link to="/admin/equipment" className="small">Equipment →</Link></div>
+          <div className="table-wrap"><table>
+            <thead><tr><th>Item</th><th>Holder</th><th>Since</th><th>Status</th></tr></thead>
+            <tbody>{equipOut.map(i => (
+              <tr key={i.id}><td><strong>{i.name}</strong></td><td>{i.holder_name}</td><td>{fmt(i.issued_at)}</td>
+                <td>{i.missing_slots.length === i.slots ? <span className="badge accent">Out</span> : <span className="badge bad">Missing {i.missing_slots.join(', ')}</span>}</td></tr>
+            ))}</tbody>
+          </table></div>
+        </div>
+      )}
       <div className="card">
         <div className="row between"><h2>Latest scans</h2><Link to="/admin/records" className="small">All records →</Link></div>
         <div className="table-wrap"><table>

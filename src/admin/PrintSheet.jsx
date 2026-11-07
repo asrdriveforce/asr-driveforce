@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { supabase } from '../lib/supabase'
-import { encodeCar, encodeDriver, encodeParkCar, PARK_ALL } from '../lib/codes'
+import { encodeCar, encodeDriver, encodeParkCar, encodeEquipment, PARK_ALL } from '../lib/codes'
 import { useEvents, EventPicker } from '../lib/useEvents'
 import { qrPng, saveBlob, safeName, zipPngs } from '../lib/qrpng'
 
@@ -17,20 +17,21 @@ export default function PrintSheet() {
 
   useEffect(() => {
     if (!ev.eventId) return
-    const table = kind === 'drivers' ? 'drivers' : 'cars'
-    supabase.from(table).select('*').eq('event_id', ev.eventId).eq('active', true).order(kind === 'drivers' ? 'full_name' : 'plate')
+    const table = kind === 'drivers' ? 'drivers' : kind === 'equipment' ? 'equipment' : 'cars'
+    supabase.from(table).select('*').eq('event_id', ev.eventId).eq('active', true).order(kind === 'drivers' ? 'full_name' : kind === 'equipment' ? 'name' : 'plate')
       .then(({ data }) => setItems(data || []))
   }, [kind, ev.eventId])
 
   const cutoff = Date.now() - sinceDays * 86400000
   const shown = kind === 'drivers' && onlyNew ? items.filter(d => new Date(d.created_at).getTime() > cutoff) : items
-  const title = { cars: 'Car codes', drivers: 'Driver badges', park: 'Park codes' }[kind] || 'Codes'
+  const title = { cars: 'Car codes', drivers: 'Driver badges', park: 'Park codes', equipment: 'Equipment codes' }[kind] || 'Codes'
   const evName = ev.event?.name || ''
 
   // One descriptor per code, used for both single PNG and zip
   function spec(it) {
     if (kind === 'drivers') return { value: encodeDriver(it.code), title: it.full_name, subtitle: evName, footer: it.code, name: `driver_${safeName(it.full_name)}_${it.code}.png` }
     if (kind === 'cars') return { value: encodeCar(it.code), title: it.plate, subtitle: it.label, footer: it.code, name: `car_${safeName(it.plate)}.png` }
+    if (kind === 'equipment') return { value: encodeEquipment(it.code), title: it.name, subtitle: `${it.slots} ${it.slots === 1 ? 'piece' : 'pieces'}`, footer: it.code, name: `equipment_${safeName(it.name)}.png` }
     return { value: encodeParkCar(it.code), title: `PARK ${it.plate}`, subtitle: it.label, name: `park_${safeName(it.plate)}.png` }
   }
   const parkAll = { value: PARK_ALL, title: 'PARK ALL CARS', subtitle: 'Ends every current assignment', name: 'park_ALL.png' }
@@ -74,8 +75,8 @@ export default function PrintSheet() {
         {shown.map(it => {
           const s = spec(it)
           return (
-            <div className={'qr-card' + (kind === 'cars' ? ' big' : '')} key={it.id}>
-              <QRCodeSVG value={s.value} size={kind === 'cars' ? 220 : 150} level="M" />
+            <div className={'qr-card' + (kind !== 'drivers' ? ' big' : '')} key={it.id}>
+              <QRCodeSVG value={s.value} size={kind !== 'drivers' ? 220 : 150} level="M" />
               <div className="name">{s.title}</div>
               <div className="sub">{s.subtitle}</div>
               {s.footer && <div className="sub" style={{ fontFamily: 'monospace', fontSize: 10 }}>{s.footer}</div>}

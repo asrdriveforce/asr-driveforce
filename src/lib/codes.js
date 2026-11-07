@@ -3,6 +3,7 @@
 export const encodeCar = (code) => `DF:C:${code}`
 export const encodeDriver = (code) => `DF:D:${code}`
 export const encodeParkCar = (code) => `DF:PC:${code}`
+export const encodeEquipment = (code) => `DF:E:${code}`
 export const PARK_ALL = 'DF:PA:ALL'
 
 export function decode(text) {
@@ -14,7 +15,7 @@ export function decode(text) {
   const parts = t.split(':')
   if (parts[0] !== 'DF' || parts.length < 3) return null
   const type = parts[1], code = parts.slice(2).join(':')
-  if (!['C', 'D', 'PC', 'PA'].includes(type)) return null
+  if (!['C', 'D', 'PC', 'PA', 'E'].includes(type)) return null
   return { type, code }
 }
 

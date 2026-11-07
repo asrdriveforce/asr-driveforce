@@ -15,6 +15,7 @@ import Records from './admin/Records'
 import Attendance from './admin/Attendance'
 import PrintSheet from './admin/PrintSheet'
 import Fines from './admin/Fines'
+import Equipment from './admin/Equipment'
 
 function NotConfigured() {
   return (
@@ -50,6 +51,7 @@ function Shell({ children, admin }) {
             <NavLink to="/admin/events">Events</NavLink>
             <NavLink to="/admin/cars">Cars</NavLink>
             <NavLink to="/admin/drivers">Drivers</NavLink>
+            <NavLink to="/admin/equipment">Equipment</NavLink>
             <NavLink to="/admin/operators">Operators</NavLink>
           </nav>
         )}
@@ -92,6 +94,7 @@ export default function App() {
         <Route path="/admin/events" element={A(<Events />)} />
         <Route path="/admin/cars" element={A(<Cars />)} />
         <Route path="/admin/drivers" element={A(<Drivers />)} />
+        <Route path="/admin/equipment" element={A(<Equipment />)} />
         <Route path="/admin/operators" element={A(<Operators />)} />
         <Route path="/admin/print/:kind" element={A(<PrintSheet />)} />
         <Route path="*" element={<Navigate to="/" replace />} />

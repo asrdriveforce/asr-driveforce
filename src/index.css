@@ -88,7 +88,11 @@ button:disabled { opacity: .5; cursor: default; transform: none; }
 .btn-block { width: 100%; }
 .btn-big { padding: 18px; font-size: 18px; border-radius: 16px; }
 .btn-sm { padding: 7px 12px; font-size: 13px; border-radius: 9px; }
-.seg { display: inline-flex; background: var(--panel-2); border-radius: 12px; padding: 3px; gap: 2px; }
+.seg { display: inline-flex; flex-wrap: wrap; background: var(--panel-2); border-radius: 12px; padding: 3px; gap: 2px; }
+.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; }
+.slot { aspect-ratio: 1; font-size: 22px; font-weight: 800; border-radius: 12px; border-width: 2px; }
+.slot.back { background: rgba(31,138,76,.12); border-color: var(--ok); color: var(--ok); }
+.slot.missing { background: rgba(198,47,28,.1); border-color: var(--bad); color: var(--bad); text-decoration: line-through; }
 .seg button { border: 0; background: transparent; padding: 9px 14px; border-radius: 9px; font-size: 14px; color: var(--muted); }
 .seg button.on { background: var(--panel); color: var(--text); box-shadow: var(--shadow); }
 

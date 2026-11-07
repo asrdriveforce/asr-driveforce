@@ -9,8 +9,8 @@ function save(q) { try { localStorage.setItem(KEY, JSON.stringify(q)) } catch { 
 
 export function pendingCount() { return load().length }
 
-export async function submitScan(row) {
-  const payload = { ...row, client_id: row.client_id || crypto.randomUUID(), scanned_at: row.scanned_at || new Date().toISOString() }
+export async function submitScan(row, table = 'scans') {
+  const payload = { ...row, _table: table, client_id: row.client_id || crypto.randomUUID(), scanned_at: row.scanned_at || new Date().toISOString() }
   const ok = await tryInsert(payload)
   if (!ok) { const q = load(); q.push(payload); save(q) }
   return ok
@@ -18,8 +18,9 @@ export async function submitScan(row) {
 
 async function tryInsert(payload) {
   try {
+    const { _table, ...row } = payload
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 8000)
-    const { error } = await supabase.from('scans').insert(payload).abortSignal(ctrl.signal)
+    const { error } = await supabase.from(_table || 'scans').insert(row).abortSignal(ctrl.signal)
     clearTimeout(t)
     if (!error) return true
     if (error.code === '23505') return true // duplicate client_id: already stored

@@ -7,9 +7,11 @@ import { decode, encodeDriver, driverLink } from '../lib/codes'
 import { submitScan, startQueueWorker, pendingCount } from '../lib/queue'
 
 const MODES = {
-  assign: { title: 'Driver into car', hint1: 'Scan the CAR code', hint2: 'Now scan the DRIVER' },
-  checkin: { title: 'Check in', hint1: 'Scan the DRIVER' },
-  park: { title: 'Park', hint1: 'Scan the CAR to park it' },
+  assign: { title: 'Driver into car', label: 'Car', hint1: 'Scan the CAR code', hint2: 'Now scan the DRIVER' },
+  checkin: { title: 'Check in', label: 'Check in', hint1: 'Scan the DRIVER' },
+  park: { title: 'Park', label: 'Park', hint1: 'Scan the CAR to park it' },
+  issue: { title: 'Issue equipment', label: 'Issue', hint1: 'Scan the EQUIPMENT code', hint2: 'Now scan the PERSON' },
+  ret: { title: 'Return equipment', label: 'Return', hint1: 'Scan the EQUIPMENT code' },
 }
 
 // One shared AudioContext, unlocked by the first tap (iOS requires a user gesture before any sound).
@@ -44,6 +46,8 @@ export default function Scan() {
   const { user, profile } = useAuth()
   const [mode, setMode] = useState('assign')
   const [car, setCar] = useState(null)       // first scan in assign mode
+  const [item, setItem] = useState(null)     // first scan in issue mode
+  const [returning, setReturning] = useState(null) // { item, back: Set<slot> } while the return screen is open
   const [flash, setFlash] = useState(null)   // { kind: 'ok'|'bad'|'warn', text }
   const [paused, setPaused] = useState(false)
   const [pending, setPending] = useState(pendingCount())
@@ -93,11 +97,15 @@ export default function Scan() {
   function withTimeout(promise, ms, fallback) {
     return Promise.race([promise, new Promise(res => setTimeout(() => res(fallback), ms))])
   }
-  async function record(row) {
+  async function record(row, table = 'scans') {
     const e = await withTimeout(loadEvent().catch(() => event), 3000, event)
-    const ok = await withTimeout(submitScan({ ...row, operator_id: user.id, event_id: e?.id || null }), 6000, false)
+    const ok = await withTimeout(submitScan({ ...row, operator_id: user.id, event_id: e?.id || null }, table), 6000, false)
     setPending(pendingCount())
     return ok
+  }
+  async function lookupEquipment(code) {
+    const { data } = await supabase.rpc('equipment_by_code', { p_code: code })
+    return data?.[0] || null
   }
 
   function done(text) { recent.current = { text, until: Date.now() + 6000 } }
@@ -134,6 +142,34 @@ export default function Scan() {
         return show('ok', `${dr.full_name} checked in${ok ? '' : ' (queued)'}`)
       }
 
+      if (mode === 'issue') {
+        if (d.type === 'E') {
+          const it = await lookupEquipment(d.code)
+          if (!it) return show('bad', 'Unknown equipment')
+          setItem(it); beep(true); done(text)
+          return
+        }
+        if (d.type !== 'D') return show('warn', item ? 'Scan the person' : 'Scan the equipment first')
+        if (!item) return show('warn', 'Scan the equipment first')
+        const dr = await lookup('drivers', d.code)
+        if (!dr) return show('bad', 'Unknown person')
+        const ok = await record({ kind: 'issue', equipment_id: item.id, driver_id: dr.id }, 'equipment_events')
+        done(text); setItem(null)
+        return show('ok', `${item.name} → ${dr.full_name}${ok ? '' : ' (queued)'}`, 2600)
+      }
+
+      if (mode === 'ret') {
+        if (d.type !== 'E') return show('warn', 'Scan an equipment code')
+        const it = await lookupEquipment(d.code)
+        if (!it) return show('bad', 'Unknown equipment')
+        if (!it.issued_at) { done(text); return show('warn', `${it.name} is not issued to anyone`) }
+        if (!it.missing_slots?.length) { done(text); return show('warn', `${it.name} already fully returned`) }
+        done(text); beep(true)
+        setReturning({ item: it, back: new Set(it.missing_slots) })
+        setPaused(true)
+        return
+      }
+
       if (mode === 'park') {
         if (d.type !== 'C') return show('warn', 'Scan a car code')
         const c = await lookup('cars', d.code)
@@ -161,7 +197,17 @@ export default function Scan() {
     } finally { busy.current = false }
   }
 
-  function switchMode(m) { primeAudio(); setMode(m); setCar(null); setFlash(null); setShowWalkIn(false); setNewDriver(null) }
+  function switchMode(m) { primeAudio(); setMode(m); setCar(null); setItem(null); setReturning(null); setPaused(false); setFlash(null); setShowWalkIn(false); setNewDriver(null) }
+
+  async function confirmReturn() {
+    const { item: it, back } = returning
+    const slots = [...back].sort((a, b) => a - b)
+    const missing = it.missing_slots.filter(n => !back.has(n))
+    const ok = await record({ kind: 'return', equipment_id: it.id, slots }, 'equipment_events')
+    setReturning(null); setPaused(false)
+    if (!slots.length) return show('warn', `${it.name}: nothing returned`)
+    show(missing.length ? 'warn' : 'ok', `${it.name}: ${missing.length ? `MISSING ${missing.join(', ')}` : 'all returned'}${ok ? '' : ' (queued)'}`, 3000)
+  }
 
   return (
     <div className="stack" onPointerDown={primeAudio}>
@@ -173,7 +219,7 @@ export default function Scan() {
       <div className="row between">
         <div className="seg">
           {Object.keys(MODES).map(m => (
-            <button key={m} className={mode === m ? 'on' : ''} onClick={() => switchMode(m)}>{MODES[m].title}</button>
+            <button key={m} className={mode === m ? 'on' : ''} onClick={() => switchMode(m)}>{MODES[m].label}</button>
           ))}
         </div>
         <button className="btn-sm" onClick={() => { setShowWalkIn(v => !v); setNewDriver(null) }}>+ Walk-in</button>
@@ -196,8 +242,33 @@ export default function Scan() {
             <button className="btn-sm btn-primary" onClick={() => setNewDriver(null)}>Back to scanning</button>
           </div>
         </div>
+      ) : returning ? (
+        <div className="card stack">
+          <h2>{returning.item.name}</h2>
+          <p className="muted small">Issued to {returning.item.holder_name}. Tap any item that did NOT come back.</p>
+          <div className="slots">
+            {returning.item.missing_slots.map(n => (
+              <button key={n} className={'slot ' + (returning.back.has(n) ? 'back' : 'missing')}
+                onClick={() => setReturning(r => { const b = new Set(r.back); b.has(n) ? b.delete(n) : b.add(n); return { ...r, back: b } })}>
+                {n}
+              </button>
+            ))}
+          </div>
+          <div className="row between">
+            <button className="btn-ghost" onClick={() => { setReturning(null); setPaused(false) }}>Cancel</button>
+            <button className="btn-primary" onClick={confirmReturn}>
+              {returning.back.size === returning.item.missing_slots.length ? 'All returned' : `Confirm (${returning.item.missing_slots.length - returning.back.size} missing)`}
+            </button>
+          </div>
+        </div>
       ) : (
         <>
+          {mode === 'issue' && (
+            <div className="grid two">
+              <div className={'step ' + (item ? 'done' : 'active')}><span className="n">1</span><div><div className="muted small">Equipment</div><strong>{item ? item.name : 'Scan item'}</strong>{item?.missing_slots?.length > 0 && <div className="small muted">currently with {item.holder_name}</div>}</div></div>
+              <div className={'step ' + (item ? 'active' : '')}><span className="n">2</span><div><div className="muted small">Person</div><strong>{item ? 'Scan badge' : 'Waiting'}</strong></div></div>
+            </div>
+          )}
           {mode === 'assign' && (
             <div className="grid two">
               <div className={'step ' + (car ? 'done' : 'active')}><span className="n">1</span><div><div className="muted small">Car</div><strong>{car ? car.plate : 'Scan car'}</strong></div></div>
@@ -205,8 +276,9 @@ export default function Scan() {
             </div>
           )}
           {flash && <div className={'alert ' + flash.kind}><div className="big-result">{flash.text}</div></div>}
-          <Scanner onScan={onScan} paused={paused} hint={flash ? flash.text : (mode === 'assign' && car ? MODES.assign.hint2 : MODES[mode].hint1)} />
+          <Scanner onScan={onScan} paused={paused} hint={flash ? flash.text : ((mode === 'assign' && car) || (mode === 'issue' && item) ? MODES[mode].hint2 : MODES[mode].hint1)} />
           {car && <button className="btn-block btn-ghost" onClick={() => setCar(null)}>Cancel car</button>}
+          {item && <button className="btn-block btn-ghost" onClick={() => setItem(null)}>Cancel item</button>}
         </>
       )}
     </div>
