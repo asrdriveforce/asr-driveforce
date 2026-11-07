@@ -42,7 +42,6 @@ export default async function handler(req, res) {
       const png = await QRCode.toBuffer(`DF:D:${d.code}`, { width: 600, margin: 2, errorCorrectionLevel: 'M' })
       const html = `
         <div style="font-family:'Avenir Next',Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;color:#111">
-          <p style="margin:0 0 20px"><img src="${base}/logo.png" alt="ASR" height="28" style="height:28px;width:auto"></p>
           <h2 style="margin:0 0 8px">${esc(event_name || 'Your event code')}</h2>
           <p>Hi ${esc(d.full_name)},</p>
           <p>${esc(intro || 'Your dedicated event code. Please present at check in.')}</p>
