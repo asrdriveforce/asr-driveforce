@@ -17,6 +17,12 @@ export default function Equipment() {
   const [editing, setEditing] = useState(null)
   const [deleting, setDeleting] = useState(null)
   const [found, setFound] = useState(null)   // { item, slot }
+  const [confirmAll, setConfirmAll] = useState(false)
+  async function returnAll() {
+    setConfirmAll(false)
+    const { data, error } = await supabase.rpc('return_all_equipment', { p_event: ev.eventId })
+    if (error) setErr(error.message); else { setMsg(`${data} item${data === 1 ? '' : 's'} marked returned`); load() }
+  }
 
   async function load() {
     if (!ev.eventId) return
@@ -71,7 +77,7 @@ export default function Equipment() {
     <div>
       <div className="page-head">
         <h1>Equipment</h1>
-        <div className="row"><EventPicker {...ev} /><Link className="btn btn-sm" to="/admin/print/equipment">Print codes</Link><button className="btn-sm" onClick={exportCsv}>Export CSV</button></div>
+        <div className="row"><EventPicker {...ev} /><Link className="btn btn-sm" to="/admin/print/equipment">Print codes</Link><button className="btn-sm" onClick={exportCsv}>Export CSV</button><button className="btn-sm btn-primary" onClick={() => setConfirmAll(true)} disabled={!out.length}>All equipment back</button></div>
       </div>
       {!ev.eventId && <div className="alert warn">Create an event first.</div>}
       {err && <div className="alert bad">{err}</div>}
@@ -79,6 +85,7 @@ export default function Equipment() {
       {editing && <FormModal title="Edit item" initial={editing} onClose={() => setEditing(null)} onSubmit={save}
         fields={[{ name: 'name', label: 'Name', required: true, autoFocus: true }, { name: 'slots', label: 'Units in it (1 for a single item)', type: 'number', required: true }]} />}
       {deleting && <ConfirmModal title="Delete item" message={`Delete ${deleting.name} and its issue/return history? This cannot be undone.`} onClose={() => setDeleting(null)} onConfirm={remove} />}
+      {confirmAll && <ConfirmModal title="All equipment back" confirmLabel="Mark all returned" message={`Mark every outstanding unit of ${out.length} item${out.length === 1 ? '' : 's'} as returned? Items with missing units should be returned individually first so the gap is recorded.`} onClose={() => setConfirmAll(false)} onConfirm={returnAll} />}
       {found && <ConfirmModal title="Mark returned" confirmLabel="Mark returned" message={`Mark ${found.item.name} #${found.slot} as returned? This is logged in your name.`} onClose={() => setFound(null)} onConfirm={markFound} />}
 
       <div className="grid kpis" style={{ marginBottom: 14 }}>

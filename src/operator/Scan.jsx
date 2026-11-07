@@ -123,6 +123,12 @@ export default function Scan() {
         done(text); setCar(null)
         return show('ok', ok ? 'ALL CARS PARKED' : 'All parked (queued)', 2600)
       }
+      if (d.type === 'RA') {
+        const { data, error } = await supabase.rpc('return_all_equipment', { p_event: event?.id || null })
+        done(text); setItem(null)
+        if (error) return show('bad', 'Return all failed')
+        return show('ok', data ? `ALL EQUIPMENT BACK (${data} item${data === 1 ? '' : 's'})` : 'Nothing was out', 2600)
+      }
       if (d.type === 'PC') {
         const c = await lookup('cars', d.code)
         if (!c) return show('bad', 'Unknown car')

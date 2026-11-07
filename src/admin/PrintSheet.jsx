@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { supabase } from '../lib/supabase'
-import { encodeCar, encodeDriver, encodeParkCar, encodeEquipment, PARK_ALL } from '../lib/codes'
+import { encodeCar, encodeDriver, encodeParkCar, encodeEquipment, PARK_ALL, RETURN_ALL } from '../lib/codes'
 import { useEvents, EventPicker } from '../lib/useEvents'
 import { qrPng, saveBlob, safeName, zipPngs } from '../lib/qrpng'
 
@@ -45,12 +45,13 @@ export default function PrintSheet() {
     return { ...base, value: encodeParkCar(it.code), title: `PARK ${it.plate}`, subtitle: it.label, name: `park_${safeName(it.plate)}.png` }
   }
   const parkAll = { logo: logoSrc, value: PARK_ALL, title: 'PARK ALL CARS', subtitle: 'Ends every current assignment', name: 'park_ALL.png' }
+  const returnAll = { logo: logoSrc, value: RETURN_ALL, title: 'ALL EQUIPMENT BACK', subtitle: 'Marks every outstanding unit returned', name: 'equipment_return_ALL.png' }
 
   async function one(s) { saveBlob(await qrPng(s), s.name) }
   async function all() {
     setBusy(true)
     try {
-      const list = kind === 'park' ? [parkAll, ...shown.map(spec)] : shown.map(spec)
+      const list = kind === 'park' ? [parkAll, returnAll, ...shown.map(spec)] : shown.map(spec)
       await zipPngs(list, `driveforce_${kind}_${safeName(evName)}.zip`)
     } finally { setBusy(false) }
   }
@@ -90,6 +91,14 @@ export default function PrintSheet() {
             <div className="name">PARK ALL CARS</div>
             <div className="sub">Ends every current assignment. Keep with the admin.</div>
             <button className="btn-sm no-print" style={{ marginTop: 8 }} onClick={() => one(parkAll)}>PNG</button>
+          </div>
+        )}
+        {kind === 'park' && (
+          <div className="qr-card big" style={{ gridColumn: '1 / -1' }}>
+            <QRCodeSVG value={RETURN_ALL} size={260} level="M" />
+            <div className="name">ALL EQUIPMENT BACK</div>
+            <div className="sub">Marks every outstanding unit returned. Scan individual items with missing units first.</div>
+            <button className="btn-sm no-print" style={{ marginTop: 8 }} onClick={() => one(returnAll)}>PNG</button>
           </div>
         )}
         {shown.map(it => {
