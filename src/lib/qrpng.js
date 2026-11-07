@@ -10,10 +10,12 @@ function loadImage(src) {
 }
 
 export async function qrPng({ value, title, subtitle = '', footer = '', logo = null }) {
-  const W = 1200, pad = 80, qrSize = W - pad * 2
+  const W = 1200, pad = 80
   const img = await loadImage(logo)
-  const logoH = img ? Math.min(170, Math.round(img.height * Math.min(1, (W - pad * 2) / img.width))) : 0
-  const logoBlock = img ? logoH + 50 : 0
+  const qrSize = img ? 820 : W - pad * 2            // smaller code when a logo shares the badge
+  const qrX = Math.round((W - qrSize) / 2)
+  const logoH = img ? Math.min(150, Math.round(img.height * Math.min(1, (W - pad * 2) / img.width))) : 0
+  const logoBlock = img ? logoH + 90 : 0
   const titleH = 150, subH = subtitle ? 70 : 0, footH = footer ? 50 : 0
   const H = pad + logoBlock + qrSize + 40 + titleH + subH + footH + pad / 2
   const c = document.createElement('canvas'); c.width = W; c.height = H
@@ -25,7 +27,7 @@ export async function qrPng({ value, title, subtitle = '', footer = '', logo = n
   }
   const q = document.createElement('canvas')
   await QRCode.toCanvas(q, value, { width: qrSize, margin: 1, errorCorrectionLevel: 'M', color: { dark: '#000000', light: '#ffffff' } })
-  ctx.drawImage(q, pad, pad + logoBlock)
+  ctx.drawImage(q, qrX, pad + logoBlock)
   ctx.fillStyle = '#000'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'
   let y = pad + logoBlock + qrSize + 40
   ctx.font = 'bold 110px Avenir Next, Helvetica, Arial, sans-serif'
