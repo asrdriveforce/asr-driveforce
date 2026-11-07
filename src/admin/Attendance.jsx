@@ -8,10 +8,11 @@ import { DatePicker } from '../components/DatePicker'
 export default function Attendance() {
   const ev = useEvents()
   const [day, setDay] = useState(dayKey(new Date()))
-  const [rows, setRows] = useState([])
+  const [rows, setRows] = useState(null)   // null = loading
 
   async function load() {
     if (!ev.eventId) return
+    setRows(null)
     const [{ data: drivers }, { data: scans }] = await Promise.all([
       supabase.from('drivers').select('id,full_name,phone,email,walk_in').eq('event_id', ev.eventId).eq('active', true).order('full_name'),
       supabase.from('scans').select('kind,driver_id,scanned_at,car:cars(plate)').eq('event_id', ev.eventId).eq('voided', false)
@@ -28,11 +29,13 @@ export default function Attendance() {
   }
   useEffect(() => { load() }, [ev.eventId, day]) // eslint-disable-line
 
-  const present = rows.filter(r => r.checkin || r.drives.length)
-  const absent = rows.filter(r => !r.checkin && !r.drives.length)
+  const loading = rows === null
+  const present = (rows || []).filter(r => r.checkin || r.drives.length)
+  const absent = (rows || []).filter(r => !r.checkin && !r.drives.length)
+  const num = (n) => loading ? <span className="muted">…</span> : n
 
   function exportCsv() {
-    download(`driveforce-attendance-${day}.csv`, csv(rows, [
+    download(`driveforce-attendance-${day}.csv`, csv(rows || [], [
       { label: 'Driver', key: 'full_name' }, { label: 'Phone', key: 'phone' }, { label: 'Walk-in', get: r => r.walk_in ? 'yes' : '' },
       { label: 'Checked in', get: r => r.checkin ? fmt(r.checkin) : '' }, { label: 'Drives', get: r => r.drives.length },
       { label: 'Cars', get: r => r.drives.map(x => x.car?.plate).join(' | ') },
@@ -46,11 +49,13 @@ export default function Attendance() {
         <div className="row"><DatePicker value={day} onChange={d => d && setDay(d)} allowClear={false} /><EventPicker {...ev} /><button className="btn-sm" onClick={exportCsv}>Export CSV</button></div>
       </div>
       <div className="grid kpis" style={{ marginBottom: 14 }}>
-        <div className="card kpi-card"><div className="kpi-label">Registered</div><div className="kpi">{rows.length}</div></div>
-        <div className="card kpi-card"><div className="kpi-label">Present</div><div className="kpi">{present.length}</div></div>
-        <div className="card kpi-card"><div className="kpi-label">Drove</div><div className="kpi">{rows.filter(r => r.drives.length).length}</div></div>
-        <div className="card kpi-card"><div className="kpi-label">No-show</div><div className="kpi">{absent.length}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">Registered</div><div className="kpi">{num((rows || []).length)}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">Present</div><div className="kpi">{num(present.length)}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">Drove</div><div className="kpi">{num((rows || []).filter(r => r.drives.length).length)}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">No-show</div><div className="kpi">{num(absent.length)}</div></div>
       </div>
+      {loading && <div className="card"><p className="muted">Loading…</p></div>}
+      {!loading && <>
       <div className="card">
         <h2>Present</h2>
         <div className="table-wrap"><table>
@@ -65,6 +70,7 @@ export default function Attendance() {
         <p className="muted small">Registered to this event but no check-in or drive on {day}.</p>
         <div className="table-wrap"><table><tbody>{absent.map(r => <tr key={r.id}><td>{r.full_name}</td><td className="muted">{r.phone}</td></tr>)}</tbody></table></div>
       </div>
+      </>}
     </div>
   )
 }

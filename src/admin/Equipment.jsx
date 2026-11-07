@@ -10,7 +10,7 @@ import { FormModal, ConfirmModal } from '../components/Modal'
 export default function Equipment() {
   const ev = useEvents()
   const { user } = useAuth()
-  const [items, setItems] = useState([])
+  const [items, setItems] = useState(null)   // null = loading
   const [history, setHistory] = useState([])
   const [name, setName] = useState(''); const [slots, setSlots] = useState(6)
   const [err, setErr] = useState(''); const [msg, setMsg] = useState('')
@@ -36,7 +36,7 @@ export default function Equipment() {
     setItems((st || []).filter(i => i.event_id === ev.eventId))
     setHistory(h || [])
   }
-  useEffect(() => { load() }, [ev.eventId]) // eslint-disable-line
+  useEffect(() => { setItems(null); load() }, [ev.eventId]) // eslint-disable-line
   useEffect(() => { const t = setInterval(load, 20000); return () => clearInterval(t) }) // eslint-disable-line
 
   async function add(e) {
@@ -62,12 +62,14 @@ export default function Equipment() {
     if (error) setErr(error.message); else { setMsg(`${item.name} #${slot} marked returned`); load() }
   }
 
-  const out = items.filter(i => i.missing_slots?.length)
+  const loading = items === null
+  const list = items || []
+  const out = list.filter(i => i.missing_slots?.length)
   const short = out.filter(i => i.missing_slots.length < i.slots)   // partly returned
   const totalMissing = out.reduce((n, i) => n + i.missing_slots.length, 0)
 
   function exportCsv() {
-    download(`driveforce-equipment-${ev.event?.name || ''}.csv`, csv(items, [
+    download(`driveforce-equipment-${ev.event?.name || ''}.csv`, csv(list, [
       { label: 'Item', key: 'name' }, { label: 'Slots', key: 'slots' }, { label: 'Status', get: i => i.missing_slots?.length ? (i.missing_slots.length === i.slots ? 'Out' : 'Partly returned') : 'In stock' },
       { label: 'Missing', get: i => (i.missing_slots || []).join(' ') }, { label: 'Holder', key: 'holder_name' }, { label: 'Issued at', get: i => i.issued_at ? fmtFull(i.issued_at) : '' }, { label: 'Issued by', key: 'issued_by' },
     ]))
@@ -89,17 +91,17 @@ export default function Equipment() {
       {found && <ConfirmModal title="Mark returned" confirmLabel="Mark returned" message={`Mark ${found.item.name} #${found.slot} as returned? This is logged in your name.`} onClose={() => setFound(null)} onConfirm={markFound} />}
 
       <div className="grid kpis" style={{ marginBottom: 14 }}>
-        <div className="card kpi-card"><div className="kpi-label">Items</div><div className="kpi">{items.length}</div></div>
-        <div className="card kpi-card"><div className="kpi-label">Out now</div><div className="kpi">{out.length}</div></div>
-        <div className="card kpi-card"><div className="kpi-label">Units not back</div><div className="kpi" style={totalMissing ? { color: 'var(--bad)' } : {}}>{totalMissing}</div></div>
-        <div className="card kpi-card"><div className="kpi-label">Partly returned</div><div className="kpi" style={short.length ? { color: 'var(--bad)' } : {}}>{short.length}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">Items</div><div className="kpi">{loading ? <span className="muted">…</span> : list.length}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">Out now</div><div className="kpi">{loading ? <span className="muted">…</span> : out.length}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">Units not back</div><div className="kpi" style={!loading && totalMissing ? { color: 'var(--bad)' } : {}}>{loading ? <span className="muted">…</span> : totalMissing}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">Partly returned</div><div className="kpi" style={!loading && short.length ? { color: 'var(--bad)' } : {}}>{loading ? <span className="muted">…</span> : short.length}</div></div>
       </div>
 
       <div className="card">
         <h2>Status</h2>
         <div className="table-wrap"><table>
           <thead><tr><th>Item</th><th>Status</th><th>Holder</th><th>Since</th><th className="hide-mobile">Issued by</th><th></th></tr></thead>
-          <tbody>{items.map(i => {
+          <tbody>{loading ? <tr><td colSpan={6} className="muted">Loading…</td></tr> : list.map(i => {
             const missing = i.missing_slots || []
             const status = !missing.length ? <span className="badge ok">In stock</span> : missing.length === i.slots ? <span className="badge accent">Out</span> : <span className="badge bad">Missing {missing.join(', ')}</span>
             return (

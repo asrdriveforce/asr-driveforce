@@ -12,6 +12,7 @@ export default function Dashboard() {
   const [today, setToday] = useState({ assigns: 0, checkins: 0, drivers: 0 })
   const [recent, setRecent] = useState([])
   const [equipOut, setEquipOut] = useState([])
+  const [loaded, setLoaded] = useState(false)
 
   async function load() {
     if (!ev.eventId) return
@@ -37,8 +38,9 @@ export default function Dashboard() {
     setRecent((scans || []).slice(0, 15))
     const { data: eq } = await supabase.rpc('equipment_status')
     setEquipOut((eq || []).filter(i => i.event_id === ev.eventId && i.missing_slots?.length))
+    setLoaded(true)
   }
-  useEffect(() => { load() }, [ev.eventId]) // eslint-disable-line
+  useEffect(() => { setLoaded(false); load() }, [ev.eventId]) // eslint-disable-line
   useEffect(() => { const t = setInterval(load, 20000); return () => clearInterval(t) }) // eslint-disable-line
 
   if (ev.loaded && !ev.events.length) return (
@@ -52,12 +54,14 @@ export default function Dashboard() {
         <EventPicker {...ev} />
       </div>
       <div className="grid kpis" style={{ marginBottom: 14 }}>
-        <div className="card kpi-card"><div className="kpi-label">Cars in use</div><div className="kpi">{Object.keys(live).length}<span className="muted" style={{ fontSize: 16, fontWeight: 600 }}> / {cars.length}</span></div></div>
-        <div className="card kpi-card"><div className="kpi-label">Drives today</div><div className="kpi">{today.assigns}</div></div>
-        <div className="card kpi-card"><div className="kpi-label">Drivers today</div><div className="kpi">{today.drivers}</div></div>
-        <div className="card kpi-card"><div className="kpi-label">Check-ins today</div><div className="kpi">{today.checkins}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">Cars in use</div><div className="kpi">{loaded ? <>{Object.keys(live).length}<span className="muted" style={{ fontSize: 16, fontWeight: 600 }}> / {cars.length}</span></> : <span className="muted">…</span>}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">Drives today</div><div className="kpi">{loaded ? today.assigns : <span className="muted">…</span>}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">Drivers today</div><div className="kpi">{loaded ? today.drivers : <span className="muted">…</span>}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">Check-ins today</div><div className="kpi">{loaded ? today.checkins : <span className="muted">…</span>}</div></div>
       </div>
+      {!loaded && <div className="card"><p className="muted">Loading…</p></div>}
 
+      {loaded && <>
       <div className="card">
         <h2>Fleet right now</h2>
         {!cars.length && <p className="muted">No cars in this event yet. <Link to="/admin/cars">Add cars</Link>.</p>}
@@ -109,6 +113,7 @@ export default function Dashboard() {
           </tbody>
         </table></div>
       </div>
+      </>}
     </div>
   )
 }
