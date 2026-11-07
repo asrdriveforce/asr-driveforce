@@ -5,9 +5,13 @@ import { useAuth } from '../lib/auth'
 import { fmt, fmtFull, csv, download } from '../lib/format'
 import { useEvents, EventPicker } from '../lib/useEvents'
 import { FormModal, ConfirmModal } from '../components/Modal'
+import Devices from './Devices'
+import { useSearchParams } from 'react-router-dom'
 
 // Equipment: items with numbered slots (a radio block with 6 radios, a helmet rack with 10 helmets).
 export default function Equipment() {
+  const [params, setParams] = useSearchParams()
+  const tab = params.get('tab') === 'phones' ? 'phones' : 'equipment'
   const ev = useEvents()
   const { user } = useAuth()
   const [items, setItems] = useState(null)   // null = loading
@@ -78,9 +82,17 @@ export default function Equipment() {
   return (
     <div>
       <div className="page-head">
-        <h1>Equipment</h1>
-        <div className="row"><EventPicker {...ev} /><Link className="btn btn-sm" to="/admin/print/equipment">Print codes</Link><button className="btn-sm" onClick={exportCsv}>Export CSV</button><button className="btn-sm btn-primary" onClick={() => setConfirmAll(true)} disabled={!out.length}>All equipment back</button></div>
+        <div className="row">
+          <h1 style={{ margin: 0 }}>Equipment</h1>
+          <div className="seg">
+            <button className={tab === 'equipment' ? 'on' : ''} onClick={() => setParams({})}>Equipment</button>
+            <button className={tab === 'phones' ? 'on' : ''} onClick={() => setParams({ tab: 'phones' })}>Phones</button>
+          </div>
+        </div>
+        {tab === 'equipment' && <div className="row"><EventPicker {...ev} /><Link className="btn btn-sm" to="/admin/print/equipment">Print codes</Link><button className="btn-sm" onClick={exportCsv}>Export CSV</button><button className="btn-sm btn-primary" onClick={() => setConfirmAll(true)} disabled={!out.length}>All equipment back</button></div>}
       </div>
+      {tab === 'phones' && <Devices embedded />}
+      {tab === 'equipment' && <>
       {!ev.eventId && <div className="alert warn">Create an event first.</div>}
       {err && <div className="alert bad">{err}</div>}
       {msg && <div className="alert ok">{msg}</div>}
@@ -144,6 +156,7 @@ export default function Equipment() {
           ))}</tbody>
         </table></div>
       </div>
+      </>}
     </div>
   )
 }

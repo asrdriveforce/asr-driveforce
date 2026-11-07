@@ -13,7 +13,7 @@ export function ColourDot({ colour, size = 12 }) {
   return <span title={colour} style={{ display: 'inline-block', width: size, height: size, borderRadius: '50%', background: SWATCH[colour] || colour.toLowerCase(), border: '1px solid rgba(0,0,0,.15)', verticalAlign: 'middle', marginRight: 6 }} />
 }
 
-export default function Devices() {
+export default function Devices({ embedded = false }) {
   const { user } = useAuth()
   const [devices, setDevices] = useState(null)
   const [log, setLog] = useState([])
@@ -64,7 +64,7 @@ export default function Devices() {
 
   return (
     <div>
-      <div className="page-head"><h1>Devices</h1></div>
+      {!embedded && <div className="page-head"><h1>Phones</h1></div>}
       {err && <div className="alert bad">{err}</div>}
       {editing && <FormModal title="Edit device" initial={editing} onClose={() => setEditing(null)} onSubmit={save}
         fields={[{ name: 'colour', label: 'Colour (sticker on the phone)', required: true, autoFocus: true }, { name: 'phone', label: 'SIM number' }, { name: 'notes', label: 'Notes', type: 'textarea' }]} />}
