@@ -93,7 +93,7 @@ export default function Cars() {
         <form className="card stack" onSubmit={add}>
           <h2>Add one</h2>
           <div><label>Licence plate</label><input value={plate} onChange={e => setPlate(e.target.value)} required /></div>
-          <div><label>Label (optional)</label><input value={label} onChange={e => setLabel(e.target.value)} placeholder="e.g. Urus, white, #7" /></div>
+          <div><label>Label (optional)</label><input value={label} onChange={e => setLabel(e.target.value)} /></div>
           <button className="btn-primary" disabled={!ev.eventId}>Add car</button>
         </form>
         <div className="card stack">
@@ -101,7 +101,7 @@ export default function Cars() {
           <p className="muted small">CSV with columns Plate and Label (or Model). Header row optional; without one the order is plate, label. Save an Excel sheet as CSV first.</p>
           <input type="file" accept=".csv,.txt,.tsv" onChange={onFile} disabled={!ev.eventId} />
           <p className="muted small">Or paste, one car per line: plate, label</p>
-          <textarea rows={4} value={bulk} onChange={e => setBulk(e.target.value)} placeholder={'A 12345, Urus white\nB 777, Huracán green'} />
+          <textarea rows={4} value={bulk} onChange={e => setBulk(e.target.value)} />
           <button onClick={addBulk} disabled={!ev.eventId || !bulk.trim()}>Add pasted cars</button>
         </div>
       </div>
