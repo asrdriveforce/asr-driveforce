@@ -245,7 +245,7 @@ export default function Scan() {
       ) : returning ? (
         <div className="card stack">
           <h2>{returning.item.name}</h2>
-          <p className="muted small">Issued to {returning.item.holder_name}. Tap any item that did NOT come back.</p>
+          <p className="muted small">Issued to {returning.item.holder_name}. Tap any unit that did NOT come back.</p>
           <div className="slots">
             {returning.item.missing_slots.map(n => (
               <button key={n} className={'slot ' + (returning.back.has(n) ? 'back' : 'missing')}

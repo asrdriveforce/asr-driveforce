@@ -77,14 +77,14 @@ export default function Equipment() {
       {err && <div className="alert bad">{err}</div>}
       {msg && <div className="alert ok">{msg}</div>}
       {editing && <FormModal title="Edit item" initial={editing} onClose={() => setEditing(null)} onSubmit={save}
-        fields={[{ name: 'name', label: 'Name', required: true, autoFocus: true }, { name: 'slots', label: 'Number of items in it (1 for a single item)', type: 'number', required: true }]} />}
+        fields={[{ name: 'name', label: 'Name', required: true, autoFocus: true }, { name: 'slots', label: 'Units in it (1 for a single item)', type: 'number', required: true }]} />}
       {deleting && <ConfirmModal title="Delete item" message={`Delete ${deleting.name} and its issue/return history? This cannot be undone.`} onClose={() => setDeleting(null)} onConfirm={remove} />}
       {found && <ConfirmModal title="Mark returned" confirmLabel="Mark returned" message={`Mark ${found.item.name} #${found.slot} as returned? This is logged in your name.`} onClose={() => setFound(null)} onConfirm={markFound} />}
 
       <div className="grid kpis" style={{ marginBottom: 14 }}>
         <div className="card kpi-card"><div className="kpi-label">Items</div><div className="kpi">{items.length}</div></div>
         <div className="card kpi-card"><div className="kpi-label">Out now</div><div className="kpi">{out.length}</div></div>
-        <div className="card kpi-card"><div className="kpi-label">Pieces not back</div><div className="kpi" style={totalMissing ? { color: 'var(--bad)' } : {}}>{totalMissing}</div></div>
+        <div className="card kpi-card"><div className="kpi-label">Units not back</div><div className="kpi" style={totalMissing ? { color: 'var(--bad)' } : {}}>{totalMissing}</div></div>
         <div className="card kpi-card"><div className="kpi-label">Partly returned</div><div className="kpi" style={short.length ? { color: 'var(--bad)' } : {}}>{short.length}</div></div>
       </div>
 
@@ -97,7 +97,7 @@ export default function Equipment() {
             const status = !missing.length ? <span className="badge ok">In stock</span> : missing.length === i.slots ? <span className="badge accent">Out</span> : <span className="badge bad">Missing {missing.join(', ')}</span>
             return (
               <tr key={i.id} style={{ opacity: i.active ? 1 : .55 }}>
-                <td><strong>{i.name}</strong><div className="muted small">{i.slots} {i.slots === 1 ? 'piece' : 'pieces'}</div></td>
+                <td><strong>{i.name}</strong><div className="muted small">{i.slots} {i.slots === 1 ? 'unit' : 'units'}</div></td>
                 <td>{status}{missing.length > 0 && missing.length < i.slots && <div className="row" style={{ gap: 4, marginTop: 4 }}>{missing.map(n => <button key={n} className="btn-sm btn-ghost" onClick={() => setFound({ item: i, slot: n })}>#{n} found</button>)}</div>}</td>
                 <td>{missing.length ? i.holder_name : <span className="muted">—</span>}</td>
                 <td className="muted">{missing.length && i.issued_at ? fmt(i.issued_at) : ''}</td>
@@ -115,9 +115,9 @@ export default function Equipment() {
 
       <form className="card grid two" onSubmit={add}>
         <div><label>Item name</label><input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Radio block B" required /></div>
-        <div><label>Pieces in it</label><input type="number" min={1} max={50} value={slots} onChange={e => setSlots(e.target.value)} /></div>
+        <div><label>Units in it</label><input type="number" min={1} max={50} value={slots} onChange={e => setSlots(e.target.value)} /></div>
         <div style={{ alignSelf: 'end' }}><button className="btn-primary" disabled={!ev.eventId}>Add item</button></div>
-        <p className="muted small" style={{ gridColumn: '1/-1', margin: 0 }}>One QR code per item. Number the pieces inside it 1 to N to match the slots. A single item (one helmet, one laptop) is 1 piece.</p>
+        <p className="muted small" style={{ gridColumn: '1/-1', margin: 0 }}>One QR code per item. Number the units inside it 1 to N. A single item (one helmet, one laptop) is 1 unit.</p>
       </form>
 
       <div className="card">

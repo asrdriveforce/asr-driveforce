@@ -31,7 +31,7 @@ export default function PrintSheet() {
   function spec(it) {
     if (kind === 'drivers') return { value: encodeDriver(it.code), title: it.full_name, subtitle: evName, footer: it.code, name: `driver_${safeName(it.full_name)}_${it.code}.png` }
     if (kind === 'cars') return { value: encodeCar(it.code), title: it.plate, subtitle: it.label, footer: it.code, name: `car_${safeName(it.plate)}.png` }
-    if (kind === 'equipment') return { value: encodeEquipment(it.code), title: it.name, subtitle: `${it.slots} ${it.slots === 1 ? 'piece' : 'pieces'}`, footer: it.code, name: `equipment_${safeName(it.name)}.png` }
+    if (kind === 'equipment') return { value: encodeEquipment(it.code), title: it.name, subtitle: `${it.slots} ${it.slots === 1 ? 'unit' : 'units'}`, footer: it.code, name: `equipment_${safeName(it.name)}.png` }
     return { value: encodeParkCar(it.code), title: `PARK ${it.plate}`, subtitle: it.label, name: `park_${safeName(it.plate)}.png` }
   }
   const parkAll = { value: PARK_ALL, title: 'PARK ALL CARS', subtitle: 'Ends every current assignment', name: 'park_ALL.png' }
