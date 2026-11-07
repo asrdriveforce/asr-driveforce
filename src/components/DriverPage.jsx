@@ -20,9 +20,8 @@ export default function DriverPage() {
   return (
     <div className="login">
       <div className="card center stack">
-        <div style={{ display: 'flex', justifyContent: 'center' }}><Logo /></div>
-        <h1>{d.full_name}</h1>
-        {d.event_name && <p className="muted">{d.event_name}</p>}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 20px' }}><Logo size={24} /></div>
+        <h1 style={{ marginBottom: 14 }}>{d.full_name}</h1>
         <div className="qr-card big" style={{ display: 'inline-block' }}>
           <QRCodeSVG value={encodeDriver(d.code)} size={240} level="M" />
           <div className="sub mono">{d.code}</div>
