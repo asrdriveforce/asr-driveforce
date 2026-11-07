@@ -1,13 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --bg: #f6f5f2;
+  --bg: #f4f5f7;
   --panel: #ffffff;
-  --panel-2: #f1efea;
-  --line: #e3e0d9;
-  --line-strong: #cfcbc2;
-  --text: #1f2023;
-  --muted: #6b6d72;
+  --panel-2: #eef0f3;
+  --line: #e2e5ea;
+  --line-strong: #cfd4db;
+  --text: #1c1f24;
+  --muted: #667085;
   --brand: #5e5f60;        /* logo grey */
   --accent: #e8862b;       /* logo orange */
   --accent-hover: #d9771d;
@@ -18,7 +18,7 @@
   --warn: #b26a0b;
   --bad: #c62f1c;
   --radius: 14px;
-  --shadow: 0 1px 2px rgba(31,32,35,.05), 0 4px 16px rgba(31,32,35,.05);
+  --shadow: 0 1px 2px rgba(16,24,40,.05), 0 2px 8px rgba(16,24,40,.04);
   font-family: "Avenir Next", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color-scheme: light;
 }
@@ -102,7 +102,7 @@ table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th, td { text-align: left; padding: 11px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
 tr:last-child td { border-bottom: 0; }
-tbody tr:hover td { background: #faf9f6; }
+tbody tr:hover td { background: #f8f9fb; }
 .table-wrap { overflow-x: auto; margin: 0 -18px; padding: 0 18px; }
 .actions { display: flex; gap: 4px; justify-content: flex-end; white-space: nowrap; }
 
