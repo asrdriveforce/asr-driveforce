@@ -122,10 +122,9 @@ export default function Fines() {
           <p className="muted small">Or paste rows:</p>
           <textarea rows={5} placeholder={'40 40632, 06/11/2026 13:52, FN-12345\n50 12345, 06/11/2026 15:10, FN-12346'} onBlur={e => { if (e.target.value.trim()) { setFines(parseFines(e.target.value)); setResults(null) } }} />
         </div>
-        <div className="card stack">
-          <h2>How matching works</h2>
-          <p className="small">Each fine is matched to the driver assigned to that plate at the offence time, using the scan log. A fine within {NEAR_MINUTES} minutes of a driver change is flagged "Verify". A fine while the car was parked or before any scan is flagged "No driver".</p>
-          <button className="btn-primary" onClick={match} disabled={!fines?.length || busy}>{busy ? 'Matching…' : `Match ${fines?.length || 0} fine${fines?.length === 1 ? '' : 's'}`}</button>
+        <div className="card stack" style={{ justifyContent: 'flex-end' }}>
+          <button className="btn-primary btn-block" onClick={match} disabled={!fines?.length || busy}>{busy ? 'Matching…' : `Match ${fines?.length || 0} fine${fines?.length === 1 ? '' : 's'}`}</button>
+          <p className="muted small" style={{ margin: 0 }}>Within {NEAR_MINUTES} min of a driver change = Verify. Parked or unscanned = No driver.</p>
         </div>
       </div>
 
