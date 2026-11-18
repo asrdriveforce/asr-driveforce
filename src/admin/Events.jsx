@@ -20,7 +20,7 @@ export default function Events() {
 
   async function loadOps() {
     const [{ data: o }, { data: a }] = await Promise.all([
-      supabase.from('operators').select('id,full_name,email,role,active,device_colour,device_phone').order('full_name'),
+      supabase.rpc('list_operators'),
       supabase.from('event_operators').select('event_id,profile_id'),
     ])
     setOps((o || []).filter(x => x.active && x.role !== 'admin'))

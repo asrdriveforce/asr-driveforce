@@ -12,7 +12,7 @@ export default function Operators() {
   const [err, setErr] = useState('')
 
   async function load() {
-    const { data, error } = await supabase.from('operators').select('*').order('created_at')
+    const { data, error } = await supabase.rpc('list_operators')
     if (error) setErr(error.message); else setRows(data || [])
   }
   useEffect(() => { load() }, [])

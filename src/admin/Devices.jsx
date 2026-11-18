@@ -26,7 +26,7 @@ export default function Devices({ embedded = false }) {
   async function load() {
     const [{ data: d, error }, { data: o }, { data: l }] = await Promise.all([
       supabase.from('devices').select('*').order('colour'),
-      supabase.from('operators').select('id,full_name,email,role,active').order('full_name'),
+      supabase.rpc('list_operators'),
       supabase.from('device_events').select('id,kind,at,device:devices(colour),who:profiles!device_events_profile_id_fkey(full_name),by:profiles!device_events_by_id_fkey(full_name)').order('at', { ascending: false }).limit(100),
     ])
     if (error) setErr(error.message)
